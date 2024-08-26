@@ -96,7 +96,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .post("/register")
                 .then()
                 .statusCode(HttpStatus.CONFLICT.value())
-                .body("reaason", equalTo("Username already exists"));
+                .body("reason", equalTo("Username already exists"));
     }
 
     @Test
@@ -149,8 +149,8 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .post("/login")
                 .then()
-                .statusCode(HttpStatus.BAD_REQUEST.value())
-                .body("message", equalTo("Bad credentials"));
+                .statusCode(HttpStatus.UNAUTHORIZED.value())
+                .body("reason", equalTo("Bad credentials"));
     }
 
     @Test
@@ -171,8 +171,8 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .get("/me")
                 .then()
                 .log().all()
-                .statusCode(HttpStatus.UNAUTHORIZED.value())
-                .body("message", equalTo("Invalid token"));
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .body("reason", equalTo("Malformed JWT"));
     }
 
     @Test
