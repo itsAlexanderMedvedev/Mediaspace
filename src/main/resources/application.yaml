@@ -1,0 +1,28 @@
+spring:
+    liquibase:
+        enabled: true
+        url: jdbc:postgresql://localhost:5433/instagram
+        password: pass
+        user: postgres
+        driver-class-name: org.postgresql.Driver
+        change-log: /db/changelog/db.changelog-root.xml
+    application:
+        name: instagram
+    datasource:
+        url: jdbc:postgresql://localhost:5433/instagram
+        username: postgres
+        password: pass
+        driver-class-name: org.postgresql.Driver
+    jpa:
+        hibernate:
+            ddl-auto: none  # to not have any conflict with Liquibase
+        show-sql: true
+
+logging:
+    level:
+        org.springframework: DEBUG
+        org.springframework.web: DEBUG
+        org.springframework.security: DEBUG
+        org.springframework.validation: DEBUG
+        org.hibernate.validator: DEBUG
+

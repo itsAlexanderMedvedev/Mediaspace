@@ -2,14 +2,11 @@ package com.amedvedev.instagram.auth;
 
 import com.amedvedev.instagram.exception.UsernameAlreadyExistsException;
 import com.amedvedev.instagram.user.User;
-import com.amedvedev.instagram.user.UserRepository;
-import jakarta.servlet.http.HttpServletResponse;
+import com.amedvedev.instagram.user.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,13 +15,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthenticationService {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public ResponseEntity<?> register(RegisterRequest request) {
-        if (userRepository.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
+    public void register(RegisterRequest request) {
+        if (userService.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
             throw new UsernameAlreadyExistsException("Username already exists");
         }
 
@@ -32,24 +29,33 @@ public class AuthenticationService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
-        userRepository.save(user);
-
-        String token = jwtService.generateToken(user);
-        return ResponseEntity.ok(new AuthenticationResponse(token));
+        userService.save(user);
     }
 
-    public ResponseEntity<?> login(LoginRequest request, HttpServletResponse response) {
+    public AuthenticationResponse login(LoginRequest request) {
         // Throws BadCredentialsException or InternalAuthenticationServiceException if authentication fails
         // (Handled by GlobalExceptionHandler)
-        authenticationManager.authenticate(
+        var authenticate = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
+        System.out.println(authenticationManager.getClass().getSimpleName());
 
-        User user = userRepository.findByUsernameIgnoreCase(request.getUsername())
+        System.out.println(authenticate.getAuthorities());
+        System.out.println(authenticate.getCredentials());
+        System.out.println(authenticate.getPrincipal());
+        System.out.println(authenticate.getName());
+
+        User user = userService.findByUsernameIgnoreCase(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         String token = jwtService.generateToken(user);
 
-        return ResponseEntity.ok(new AuthenticationResponse(token));
+        return new AuthenticationResponse(token);
+    }
+
+    public User me() {
+        return userService.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UsernameNotFoundException("You are not logged in"));
     }
 }

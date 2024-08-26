@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="8" author="alexander">
+        <createTable tableName="media_post">
+            <column name="media_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="post_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="position" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="media_post" columnNames="media_id, post_id" constraintName="pk_media_post"/>
+
+        <addForeignKeyConstraint baseTableName="media_post"
+                                 baseColumnNames="media_id"
+                                 constraintName="fk_media_associated_with_post"
+                                 referencedTableName="media"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="media_post"
+                                 baseColumnNames="post_id"
+                                 constraintName="fk_post_has_media"
+                                 referencedTableName="post"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

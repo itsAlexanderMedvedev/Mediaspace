@@ -1,6 +1,7 @@
 package com.amedvedev.instagram.config;
 
 import com.amedvedev.instagram.auth.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,13 +28,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(customizer ->
                         customizer
                                 .requestMatchers(
-                                        "/auth/**",
+                                        "/api/auth/**",
                                         "/error").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .exceptionHandling(customizer ->
                         customizer.authenticationEntryPoint(
-                                (request, response, authException) -> response.sendRedirect("/auth/login")
+                                (request, response, authException) -> response.sendError(
+                                        HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage()
+                                )
                         )
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

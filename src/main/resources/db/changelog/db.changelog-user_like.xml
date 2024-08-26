@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="4" author="alexander">
+        <createTable tableName="user_like">
+            <column name="user_profile_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="post_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey columnNames="user_profile_id, post_id" constraintName="pk_like" tableName="user_like"/>
+
+        <addForeignKeyConstraint baseTableName="user_like"
+                                 baseColumnNames="user_profile_id"
+                                 constraintName="fk_like_user"
+                                 referencedTableName="user_profile"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="user_like"
+                                 baseColumnNames="post_id"
+                                 constraintName="fk_like_post"
+                                 referencedTableName="post"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>
