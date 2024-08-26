@@ -24,7 +24,7 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "user_profile")
+@Table(name = "_user")
 public class User implements UserDetails {
 
     @Id
@@ -55,6 +55,19 @@ public class User implements UserDetails {
     private List<Post> posts = new ArrayList<>();
 
     @Builder.Default
+    @ManyToMany
+    @JoinTable(
+            name = "follow",
+            joinColumns = @JoinColumn(name = "follower_id"),
+            inverseJoinColumns = @JoinColumn(name = "followee_id")
+    )
+    private List<User> followers = new ArrayList<>();
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "followers")
+    private List<User> following = new ArrayList<>();
+
+    @Builder.Default
     @OneToMany(mappedBy = "user")
     @OrderBy("createdAt DESC")
     private List<Like> likes = new ArrayList<>();
@@ -73,7 +86,7 @@ public class User implements UserDetails {
     @ManyToMany
     @JoinTable(
             name = "user_tag",
-            joinColumns = @JoinColumn(name = "user_profile_id"),
+            joinColumns = @JoinColumn(name = "_user_id"),
             inverseJoinColumns = @JoinColumn(name = "post_id")
     )
     private List<Post> taggedAt = new ArrayList<>();

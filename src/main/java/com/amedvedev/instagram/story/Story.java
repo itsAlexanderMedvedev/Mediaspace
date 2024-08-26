@@ -24,7 +24,7 @@ public class Story {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_profile_id", nullable = false)
+    @JoinColumn(name = "_user_id", nullable = false)
     private User user;
 
     @OneToOne

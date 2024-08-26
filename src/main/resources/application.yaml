@@ -5,7 +5,7 @@ spring:
         password: pass
         user: postgres
         driver-class-name: org.postgresql.Driver
-        change-log: /db/changelog/db.changelog-root.xml
+        change-log: /db/changelog/db.changelog-master.yaml
     application:
         name: instagram
     datasource:

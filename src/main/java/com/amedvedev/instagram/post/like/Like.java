@@ -21,7 +21,7 @@ public class Like {
 
     @ManyToOne
     @MapsId("userId")
-    @JoinColumn(name = "user_profile_id", insertable = false, updatable = false)
+    @JoinColumn(name = "_user_id", insertable = false, updatable = false)
     private User user;
 
     @ManyToOne

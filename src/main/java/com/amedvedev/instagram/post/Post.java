@@ -32,7 +32,7 @@ public class Post {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_profile_id", nullable = false)
+    @JoinColumn(name = "_user_id", nullable = false)
     private User user;
 
     @Column(name = "title", nullable = false, length = 64)
@@ -58,7 +58,7 @@ public class Post {
     @JoinTable(
             name = "user_like",
             joinColumns = @JoinColumn(name = "post_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_profile_id")
+            inverseJoinColumns = @JoinColumn(name = "_user_id")
     )
     private Set<User> likedByUsers = new HashSet<>();
 

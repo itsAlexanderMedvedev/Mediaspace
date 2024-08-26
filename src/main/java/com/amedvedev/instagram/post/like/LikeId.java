@@ -14,7 +14,7 @@ import java.io.Serializable;
 @Embeddable
 public class LikeId implements Serializable {
 
-    @Column(name = "user_profile_id")
+    @Column(name = "_user_id")
     private Long userId;
 
     @Column(name = "post_id")
