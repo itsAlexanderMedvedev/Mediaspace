@@ -1,5 +1,8 @@
 package com.amedvedev.instagram.exception;
 
+import io.jsonwebtoken.MalformedJwtException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -7,77 +10,87 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, Object> response = new LinkedHashMap<>();
         Map<String, String> errors = new LinkedHashMap<>();
+
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        var badRequest = HttpStatus.BAD_REQUEST;
-        response.put("status", badRequest.value() + " " + badRequest.getReasonPhrase());
+
         response.put("errors", errors);
         response.put("timestamp", new Date());
-        return new ResponseEntity<>(response, badRequest);
+
+        return response;
     }
 
     @ExceptionHandler(UsernameAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, Object> handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
         Map<String, Object> response = new LinkedHashMap<>();
-        var conflict = HttpStatus.CONFLICT;
-        response.put("status", conflict.value() + " " + conflict.getReasonPhrase());
+
         response.put("reason", ex.getMessage());
         response.put("timestamp", new Date());
-        return new ResponseEntity<>(response, conflict);
+
+        return response;
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, Object>> handleAuthenticationException(Exception ex) {
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, Object> handleAuthenticationException(Exception ex) {
         Map<String, Object> response = new LinkedHashMap<>();
-        var unauthorized = HttpStatus.UNAUTHORIZED;
-        response.put("status", unauthorized.value() + " " + unauthorized.getReasonPhrase());
+
+
         response.put("reason", ex.getMessage());
         response.put("timestamp", new Date());
-        return new ResponseEntity<>(response, unauthorized);
+
+        return response;
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleIllegalArgumentException(IllegalArgumentException ex) {
         Map<String, Object> response = new LinkedHashMap<>();
-        var badRequest = HttpStatus.BAD_REQUEST;
-        response.put("status", badRequest.value() + " " + badRequest.getReasonPhrase());
+
         response.put("reason", ex.getMessage());
         response.put("timestamp", new Date());
-        return new ResponseEntity<>(response, badRequest);
+
+        return response;
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleUserNotFoundException(UserNotFoundException ex) {
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, Object> handleUserNotFoundException(UserNotFoundException ex) {
         Map<String, Object> response = new LinkedHashMap<>();
-        var notFound = HttpStatus.NOT_FOUND;
-        response.put("status", notFound.value() + " " + notFound.getReasonPhrase());
+
         response.put("reason", ex.getMessage());
         response.put("timestamp", new Date());
-        return new ResponseEntity<>(response, notFound);
+
+        return response;
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, Object> handleJwt(MalformedJwtException ex) {
         Map<String, Object> response = new LinkedHashMap<>();
-        var internalServerError = HttpStatus.INTERNAL_SERVER_ERROR;
-        response.put("status", internalServerError.value() + " " + internalServerError.getReasonPhrase());
+
         response.put("reason", ex.getMessage());
         response.put("timestamp", new Date());
-        return new ResponseEntity<>(response, internalServerError);
+
+        return response;
     }
 }

@@ -7,8 +7,6 @@ import org.testcontainers.utility.DockerImageName;
 
 public abstract class AbstractIntegrationTest {
 
-    static String jwtToken;
-
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
             DockerImageName.parse("postgres:16.2-alpine"));
 

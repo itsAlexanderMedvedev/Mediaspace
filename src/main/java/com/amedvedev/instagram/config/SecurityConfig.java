@@ -1,6 +1,7 @@
 package com.amedvedev.instagram.config;
 
 import com.amedvedev.instagram.auth.JwtAuthenticationFilter;
+import com.amedvedev.instagram.exception.FilterChainExceptionHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final FilterChainExceptionHandler filterChainExceptionHandler;
     private final AuthenticationProvider authenticationProvider;
 
     @Bean
@@ -42,6 +44,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(filterChainExceptionHandler, JwtAuthenticationFilter.class)
                 .build();
     }
 }
