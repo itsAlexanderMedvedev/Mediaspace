@@ -6,27 +6,44 @@ import com.amedvedev.instagram.user.User;
 import com.amedvedev.instagram.user.dto.ViewUserDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedSourcePolicy = ReportingPolicy.WARN)
 public interface UserMapper {
 
     @Mapping(source = "profilePicture.url", target = "profilePictureUrl")
     @Mapping(source = "posts", target = "postsIds", qualifiedByName = "postsToIds")
     @Mapping(source = "stories", target = "storiesIds", qualifiedByName = "storiesToIds")
-    @Mapping(target = "followersCount", expression = "java(user.getFollowers().size())")
+    @Mapping(source = "followers", target = "followersCount", qualifiedByName = "followersCount")
+    @Mapping(source = "following", target = "followingCount", qualifiedByName = "followingCount")
     ViewUserDto toViewUserDto(User user);
 
+
+
+    @Named("postsToIds")
     default List<Long> postsToIds(List<Post> posts){
         return posts.stream()
                 .map(Post::getId)
                 .toList();
     }
 
+    @Named("storiesToIds")
     default List<Long> storiesToIds(List<Story> stories){
         return stories.stream()
                 .map(Story::getId)
                 .toList();
+    }
+
+    @Named("followersCount")
+    default long followersCount(List<User> followers){
+        return followers.size();
+    }
+
+    @Named("followingCount")
+    default long followingCount(List<User> following){
+        return following.size();
     }
 }

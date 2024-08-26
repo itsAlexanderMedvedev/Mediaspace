@@ -3,6 +3,8 @@ package com.amedvedev.instagram.auth;
 import com.amedvedev.instagram.exception.UsernameAlreadyExistsException;
 import com.amedvedev.instagram.user.User;
 import com.amedvedev.instagram.user.UserService;
+import com.amedvedev.instagram.user.dto.ViewUserDto;
+import com.amedvedev.instagram.user.mapper.UserMapperImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +21,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final UserMapperImpl userMapper;
 
     public void register(RegisterRequest request) {
         if (userService.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
@@ -53,9 +56,11 @@ public class AuthenticationService {
         return new AuthenticationResponse(token);
     }
 
-    public User me() {
-        return userService.findByUsernameIgnoreCase(
+    public ViewUserDto me() {
+        var user = userService.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
         ).orElseThrow(() -> new UsernameNotFoundException("You are not logged in"));
+
+        return userMapper.toViewUserDto(user);
     }
 }

@@ -1,6 +1,7 @@
 package com.amedvedev.instagram.auth;
 
 import com.amedvedev.instagram.user.User;
+import com.amedvedev.instagram.user.dto.ViewUserDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,7 +37,7 @@ public class AuthenticationController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> me() {
+    public ResponseEntity<ViewUserDto> me() {
         var authenticationResponse = authenticationService.me();
         return ResponseEntity.ok(authenticationResponse);
     }
