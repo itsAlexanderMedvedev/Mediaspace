@@ -138,7 +138,7 @@ class AuthenticationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(content().string("Registration successful."));
+                .andExpect(jsonPath("$.message").value("User registered successfully"));
     }
 
     @Test

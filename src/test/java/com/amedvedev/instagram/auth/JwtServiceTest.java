@@ -106,11 +106,7 @@ class JwtServiceTest {
         String token = jwtService.generateToken(userDetails);
         when(jwtService.extractUsername(token)).thenReturn("invalidUser");
 
-        System.out.println(jwtService.isTokenValid(token, userDetails));
-
-        assertThatThrownBy(() -> jwtService.isTokenValid(token, userDetails))
-                .isInstanceOf(ExpiredJwtException.class)
-                .hasMessageStartingWith("JWT expired");
+        assertThat(jwtService.isTokenValid(token, userDetails)).isFalse();
     }
 
 
