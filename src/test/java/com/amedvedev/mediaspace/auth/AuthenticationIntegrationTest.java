@@ -66,7 +66,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .extract()
-                .as(AuthenticationResponse.class);
+                .as(LoginResponse.class);
 
         given()
                 .header("Authorization", "Bearer " + authenticationResponse.getToken())
@@ -194,7 +194,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .extract()
-                .as(AuthenticationResponse.class);
+                .as(LoginResponse.class);
 
         given()
                 .header("Authorization", "Bearer " + authenticationResponse.getToken())

@@ -14,6 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.stream.Stream;
@@ -134,10 +135,15 @@ class AuthenticationControllerTest {
     void registerShouldReturnCreatedStatusAndMessageWhenInputIsValid() throws Exception {
         var request = new RegisterRequest("username", "password");
 
+        var response = new RegisterResponse("User registered successfully");
+
+        Mockito.when(authenticationService.register(any())).thenReturn(response);
+
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
+                .andDo(MockMvcResultHandlers.print())
                 .andExpect(jsonPath("$.message").value("User registered successfully"));
     }
 
@@ -145,7 +151,7 @@ class AuthenticationControllerTest {
     void loginShouldReturnOkStatusAndTokenWhenInputIsValid() throws Exception {
         var request = new LoginRequest("username", "password");
 
-        var response = new AuthenticationResponse("mock-token");
+        var response = new LoginResponse("mock-token");
 
         Mockito.when(authenticationService.login(any())).thenReturn(response);
 

@@ -23,9 +23,11 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
 
-    public void register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
+
+        // TODO: test this
         if (userService.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
-            throw new UsernameAlreadyExistsException("Username already exists");
+            throw new UsernameAlreadyExistsException("This username is already taken");
         }
 
         User user = User.builder()
@@ -33,9 +35,11 @@ public class AuthenticationService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
         userService.save(user);
+
+        return new RegisterResponse("User registered successfully");
     }
 
-    public AuthenticationResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         // Throws BadCredentialsException or InternalAuthenticationServiceException if authentication fails
         // (Handled by GlobalExceptionHandler)
         var authenticate = authenticationManager.authenticate(
@@ -53,7 +57,7 @@ public class AuthenticationService {
 
         String token = jwtService.generateToken(user);
 
-        return new AuthenticationResponse(token);
+        return new LoginResponse(token);
     }
 
     public ViewUserDto me() {

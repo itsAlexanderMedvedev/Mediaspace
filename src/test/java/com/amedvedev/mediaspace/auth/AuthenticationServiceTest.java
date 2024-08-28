@@ -121,7 +121,7 @@ class AuthenticationServiceTest {
                 .thenReturn("mock-token");
 
 
-        AuthenticationResponse response = authenticationService.login(request);
+        LoginResponse response = authenticationService.login(request);
 
         assertThat(response.getToken()).isEqualTo("mock-token");
     }
