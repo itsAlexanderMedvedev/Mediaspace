@@ -1,11 +1,15 @@
 package com.amedvedev.mediaspace.story;
 
+import com.amedvedev.mediaspace.exception.GeneralErrorResponse;
+import com.amedvedev.mediaspace.exception.ValidationErrorResponse;
 import com.amedvedev.mediaspace.story.dto.CreateStoryDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,11 +28,15 @@ public class StoryController {
             ),
             @ApiResponse(
                     responseCode = "400", description = "Invalid input",
-                    content = @Content
+                    content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             )
     })
     @PostMapping
-    public void createStory(@RequestBody CreateStoryDto request) {
+    public void createStory(@Valid @RequestBody CreateStoryDto request) {
 
     }
 }

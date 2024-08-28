@@ -1,15 +1,15 @@
 spring:
     liquibase:
         enabled: true
-        url: jdbc:postgresql://localhost:5433/instagram
+        url: jdbc:postgresql://localhost:5433/mediaspace
         password: pass
         user: postgres
         driver-class-name: org.postgresql.Driver
         change-log: /db/changelog/db.changelog-master.yaml
     application:
-        name: instagram
+        name: mediaspace
     datasource:
-        url: jdbc:postgresql://localhost:5433/instagram
+        url: jdbc:postgresql://localhost:5433/mediaspace
         username: postgres
         password: pass
         driver-class-name: org.postgresql.Driver

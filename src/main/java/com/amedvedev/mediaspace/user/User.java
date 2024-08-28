@@ -32,7 +32,7 @@ public class User implements UserDetails {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "profile_picture_id")
     private Media profilePicture;
 
@@ -51,8 +51,13 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt;
 
     @Builder.Default
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts = new ArrayList<>();
+
+    @Builder.Default
+    @OrderBy("createdAt DESC")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Story> stories = new ArrayList<>();
 
     @Builder.Default
     @ManyToMany
@@ -68,19 +73,14 @@ public class User implements UserDetails {
     private List<User> following = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "user")
     @OrderBy("createdAt DESC")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Like> likes = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "user")
     @OrderBy("createdAt DESC")
     private List<Comment> comments = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "user")
-    @OrderBy("createdAt DESC")
-    private List<Story> stories = new ArrayList<>();
 
     @Builder.Default
     @ManyToMany

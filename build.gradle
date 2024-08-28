@@ -78,8 +78,8 @@ tasks.named('test') {
 liquibase {
     activities {
         main {
-            changelogFile '/db/changelog/db.changelog-root.xml'
-            url 'jdbc:postgresql://localhost:5433/instagram'
+            changelogFile '/db/changelog/db.changelog-master.yaml'
+            url 'jdbc:postgresql://localhost:5433/mediaspace'
             username 'postgres'
             password 'pass'
             driver 'org.postgresql.Driver'
