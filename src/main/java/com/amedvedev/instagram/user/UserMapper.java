@@ -1,8 +1,7 @@
-package com.amedvedev.instagram.user.mapper;
+package com.amedvedev.instagram.user;
 
 import com.amedvedev.instagram.post.Post;
 import com.amedvedev.instagram.story.Story;
-import com.amedvedev.instagram.user.User;
 import com.amedvedev.instagram.user.dto.ViewUserDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

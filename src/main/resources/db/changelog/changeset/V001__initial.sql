@@ -1,14 +1,6 @@
 CREATE TABLE media (
     id               bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    url              varchar(4096) NOT NULL,
-    type             varchar(32)   NOT NULL,
-    resolution       varchar(10)   NOT NULL,
-    format           varchar(7)    NOT NULL,
-    duration_seconds integer,
-
-    CONSTRAINT check_media_type_duration
-        CHECK ((((type)::text = 'video'::text) AND (duration_seconds IS NOT NULL)) OR
-               (((type)::text = 'image'::text) AND (duration_seconds IS NULL)))
+    url              varchar(4096) NOT NULL
 );
 
 CREATE TABLE _user (

@@ -2,9 +2,10 @@ package com.amedvedev.instagram.auth;
 
 import com.amedvedev.instagram.exception.UsernameAlreadyExistsException;
 import com.amedvedev.instagram.user.User;
+import com.amedvedev.instagram.user.UserMapper;
+import com.amedvedev.instagram.user.UserMapperImpl;
 import com.amedvedev.instagram.user.UserService;
 import com.amedvedev.instagram.user.dto.ViewUserDto;
-import com.amedvedev.instagram.user.mapper.UserMapperImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,7 +22,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final UserMapperImpl userMapper;
+    private final UserMapper userMapper;
 
     public void register(RegisterRequest request) {
         if (userService.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
