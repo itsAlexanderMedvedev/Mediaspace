@@ -63,21 +63,4 @@ public class AuthenticationController {
         return authenticationService.login(request);
     }
 
-
-    @Operation(summary = "Get authenticated user", description = "Returns main info about the authenticated user.")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200", description = "Authenticated user data",
-                    content = @Content(schema = @Schema(implementation = ViewUserDto.class))
-            ),
-            @ApiResponse(
-                    responseCode = "401", description = "Unauthorized",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            ),
-    })
-    @GetMapping("/me")
-    @ResponseStatus(HttpStatus.OK)
-    public ViewUserDto me() {
-        return authenticationService.me();
-    }
 }

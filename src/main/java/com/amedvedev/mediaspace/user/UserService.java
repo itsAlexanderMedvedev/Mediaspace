@@ -2,7 +2,10 @@ package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.UpdateUserDto;
+import com.amedvedev.mediaspace.user.dto.ViewUserDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +17,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     public void updateUser(String username, UpdateUserDto updateUserDto) {
         var userOptional = findByUsernameIgnoreCase(username);
@@ -51,5 +55,13 @@ public class UserService {
 
     public void save(User user) {
         userRepository.save(user);
+    }
+
+    public ViewUserDto me() {
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UsernameNotFoundException("You are not logged in"));
+
+        return userMapper.toViewUserDto(user);
     }
 }

@@ -2,13 +2,10 @@ package com.amedvedev.mediaspace.auth;
 
 import com.amedvedev.mediaspace.exception.UsernameAlreadyExistsException;
 import com.amedvedev.mediaspace.user.User;
-import com.amedvedev.mediaspace.user.UserMapper;
 import com.amedvedev.mediaspace.user.UserService;
-import com.amedvedev.mediaspace.user.dto.ViewUserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,7 +18,6 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final UserMapper userMapper;
 
     public RegisterResponse register(RegisterRequest request) {
 
@@ -58,13 +54,5 @@ public class AuthenticationService {
         String token = jwtService.generateToken(user);
 
         return new LoginResponse(token);
-    }
-
-    public ViewUserDto me() {
-        var user = userService.findByUsernameIgnoreCase(
-                SecurityContextHolder.getContext().getAuthentication().getName()
-        ).orElseThrow(() -> new UsernameNotFoundException("You are not logged in"));
-
-        return userMapper.toViewUserDto(user);
     }
 }

@@ -1,6 +1,8 @@
 package com.amedvedev.mediaspace.user;
 
+import com.amedvedev.mediaspace.exception.GeneralErrorResponse;
 import com.amedvedev.mediaspace.user.dto.UpdateUserDto;
+import com.amedvedev.mediaspace.user.dto.ViewUserDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,6 +25,23 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+
+    @Operation(summary = "Get authenticated user", description = "Returns main info about the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "Authenticated user data",
+                    content = @Content(schema = @Schema(implementation = ViewUserDto.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+    })
+    @GetMapping("/me")
+    @ResponseStatus(HttpStatus.OK)
+    public ViewUserDto me() {
+        return userService.me();
+    }
 
     @Operation(summary = "Update user information", description = "Updates the information of an existing user.")
     @ApiResponses(value = {
