@@ -64,4 +64,7 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id.position ASC")
     private List<MediaPost> mediaPosts = new ArrayList<>();
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted;
 }

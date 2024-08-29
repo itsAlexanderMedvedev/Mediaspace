@@ -91,6 +91,9 @@ public class User implements UserDetails {
     )
     private List<Post> taggedAt = new ArrayList<>();
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
@@ -106,4 +109,9 @@ public class User implements UserDetails {
         return username;
     }
 
+    // TODO: Test authorization behaviour of deleted usersi
+    @Override
+    public boolean isEnabled() {
+        return !isDeleted;
+    }
 }
