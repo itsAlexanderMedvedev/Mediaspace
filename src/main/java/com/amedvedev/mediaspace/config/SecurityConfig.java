@@ -1,5 +1,6 @@
 package com.amedvedev.mediaspace.config;
 
+import com.amedvedev.mediaspace.auth.CustomAuthenticationEntryPoint;
 import com.amedvedev.mediaspace.auth.JwtAuthenticationFilter;
 import com.amedvedev.mediaspace.exception.FilterChainExceptionHandler;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,6 +23,10 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final FilterChainExceptionHandler filterChainExceptionHandler;
     private final AuthenticationProvider authenticationProvider;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
+    // TODO: Revert commit, finish tests
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -37,13 +42,7 @@ public class SecurityConfig {
                                         "/error").permitAll()
                                 .anyRequest().authenticated()
                 )
-                .exceptionHandling(customizer ->
-                        customizer.authenticationEntryPoint(
-                                (request, response, authException) -> response.sendError(
-                                        HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage()
-                                )
-                        )
-                )
+                .exceptionHandling(customizer -> customizer.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

@@ -1,21 +1,25 @@
 package com.amedvedev.mediaspace.exception;
 
-import io.jsonwebtoken.ExpiredJwtException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Component
+@RequiredArgsConstructor
 public class FilterChainExceptionHandler extends OncePerRequestFilter {
+
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(
@@ -24,22 +28,20 @@ public class FilterChainExceptionHandler extends OncePerRequestFilter {
             @NonNull FilterChain filterChain) throws IOException {
         try {
             filterChain.doFilter(request, response);
-        }  catch (MalformedJwtException ex) {
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            response.setContentType("application/json");
-            response.getWriter().write("{\"reason\":\"Malformed JWT\", \"timestamp\":\"" + new Date() + "\"}");
-        } catch (ExpiredJwtException ex) {
+        } catch (JwtException ex) {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType("application/json");
-            response.getWriter().write("{\"reason\":\"Expired JWT\", \"timestamp\":\"" + new Date() + "\"}");
-        } catch (SignatureException ex) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-            response.setContentType("application/json");
-            response.getWriter().write("{\"reason\":\"Invalid JWT signature\", \"timestamp\":\"" + new Date() + "\"}");
+            String jsonResponse = objectMapper.writeValueAsString(
+                    new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now())
+            );
+            response.getWriter().write(jsonResponse);
         } catch (Exception ex) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.setContentType("application/json");
-            response.getWriter().write("{\"reason\":\"Invalid JWT\", \"timestamp\":\"" + new Date() + "\"}");
+            String jsonResponse = objectMapper.writeValueAsString(
+                    new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now())
+            );
+            response.getWriter().write(jsonResponse);
         }
     }
 }

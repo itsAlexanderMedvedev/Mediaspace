@@ -22,7 +22,7 @@ logging:
     level:
         org.springframework: DEBUG
         org.springframework.web: DEBUG
-        org.springframework.security: DEBUG
+        org.springframework.security: TRACE
         org.springframework.validation: DEBUG
         org.hibernate.validator: DEBUG
 
