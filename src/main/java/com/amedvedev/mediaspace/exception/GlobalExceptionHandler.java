@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -47,9 +48,9 @@ public class GlobalExceptionHandler {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
+    @ExceptionHandler({UserNotFoundException.class, NoResourceFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public GeneralErrorResponse handleUserNotFoundException(UserNotFoundException ex) {
+    public GeneralErrorResponse handleUserNotFoundException(Exception ex) {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 

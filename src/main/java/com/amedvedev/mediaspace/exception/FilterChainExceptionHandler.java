@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 
 @Component
@@ -31,17 +32,30 @@ public class FilterChainExceptionHandler extends OncePerRequestFilter {
         } catch (JwtException ex) {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType("application/json");
+
+            String message;
+            if (ex instanceof MalformedJwtException) {
+                message = "Malformed JWT";
+            } else {
+                message = ex.getMessage();
+            }
+
             String jsonResponse = objectMapper.writeValueAsString(
-                    new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now())
-            );
-            response.getWriter().write(jsonResponse);
+                    new GeneralErrorResponse(message, LocalDateTime.now()));
+
+            PrintWriter writer = response.getWriter();
+            writer.write(jsonResponse);
+            writer.flush();
         } catch (Exception ex) {
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.setContentType("application/json");
+
             String jsonResponse = objectMapper.writeValueAsString(
-                    new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now())
-            );
-            response.getWriter().write(jsonResponse);
+                    new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now()));
+
+            PrintWriter writer = response.getWriter();
+            writer.write(jsonResponse);
+            writer.flush();
         }
     }
 }

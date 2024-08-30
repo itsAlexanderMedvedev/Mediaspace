@@ -24,10 +24,14 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     UserRepository userRepository;
 
+    private String securedPath;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = "/api/auth";
+        securedPath = RestAssured.baseURI + ":" + port + "/api/users/me";
+
         userRepository.deleteAll();
     }
 
@@ -48,7 +52,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldLoginUserAndPerformRequest() {
+    void shouldLoginUser() {
         given()
                 .contentType(ContentType.JSON)
                 .body(new RegisterRequest("test", "password"))
@@ -58,7 +62,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.CREATED.value())
                 .body("message", equalTo("User registered successfully"));
 
-        var authenticationResponse = given()
+        given()
                 .contentType(ContentType.JSON)
                 .body(new LoginRequest("test", "password"))
                 .when()
@@ -67,15 +71,6 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .as(LoginResponse.class);
-
-        given()
-                .header("Authorization", "Bearer " + authenticationResponse.getToken())
-                .when()
-                .get("/me")
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .body("username", equalTo("test"));
-
     }
 
     @Test
@@ -96,7 +91,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .post("/register")
                 .then()
                 .statusCode(HttpStatus.CONFLICT.value())
-                .body("reason", equalTo("Username already exists"));
+                .body("reason", equalTo("This username is already taken"));
     }
 
     @Test
@@ -157,10 +152,10 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     void shouldNotPerformRequestWithoutAuthorization() {
         given()
                 .when()
-                .get("/me")
+                .get(securedPath)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
-                .body("reason", equalTo("You are not logged in"));
+                .body("reason", equalTo("Full authentication is required to access this resource"));
     }
 
     @Test
@@ -168,10 +163,9 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         given()
                 .header("Authorization", "Bearer invalid")
                 .when()
-                .get("/me")
+                .get(securedPath)
                 .then()
-                .log().all()
-                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Malformed JWT"));
     }
 
@@ -199,7 +193,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         given()
                 .header("Authorization", "Bearer " + authenticationResponse.getToken())
                 .when()
-                .get("/me")
+                .get(securedPath)
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("username", equalTo("username"));

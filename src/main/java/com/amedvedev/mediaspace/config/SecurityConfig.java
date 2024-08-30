@@ -25,9 +25,6 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
-    // TODO: Revert commit, finish tests
-
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
