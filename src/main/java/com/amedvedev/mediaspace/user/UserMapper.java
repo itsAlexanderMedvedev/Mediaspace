@@ -2,7 +2,7 @@ package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.post.Post;
 import com.amedvedev.mediaspace.story.Story;
-import com.amedvedev.mediaspace.user.dto.ViewUserDto;
+import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -18,8 +18,7 @@ public interface UserMapper {
     @Mapping(source = "stories", target = "storiesIds", qualifiedByName = "storiesToIds")
     @Mapping(source = "followers", target = "followersCount", qualifiedByName = "followersCount")
     @Mapping(source = "following", target = "followingCount", qualifiedByName = "followingCount")
-    ViewUserDto toViewUserDto(User user);
-
+    ViewUserResponse toViewUserDto(User user);
 
 
     @Named("postsToIds")

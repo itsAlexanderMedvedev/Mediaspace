@@ -1,4 +1,4 @@
-package com.amedvedev.mediaspace.auth;
+package com.amedvedev.mediaspace.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

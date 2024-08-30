@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ViewUserDto {
+public class ViewUserResponse {
     private String username;
     private String profilePictureUrl;
     private List<Long> postsIds;

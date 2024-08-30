@@ -1,8 +1,10 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.exception.GeneralErrorResponse;
-import com.amedvedev.mediaspace.user.dto.UpdateUserDto;
-import com.amedvedev.mediaspace.user.dto.ViewUserDto;
+import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
+import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
+import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
+import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
+import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,11 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Tag(name = "User", description = "Endpoints for managing users")
 @RestController
@@ -30,7 +28,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Authenticated user data",
-                    content = @Content(schema = @Schema(implementation = ViewUserDto.class))
+                    content = @Content(schema = @Schema(implementation = ViewUserResponse.class))
             ),
             @ApiResponse(
                     responseCode = "401", description = "Unauthorized",
@@ -39,33 +37,34 @@ public class UserController {
     })
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
-    public ViewUserDto me() {
+    public ViewUserResponse me() {
         return userService.me();
     }
+
 
     @Operation(summary = "Update user information", description = "Updates the information of an existing user.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "User updated successfully",
-                    content = @Content(schema = @Schema(implementation = Map.class))
+                    content = @Content(schema = @Schema(implementation = UpdateUserResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400", description = "Invalid input",
-                    content = @Content
+                    content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             ),
             @ApiResponse(
                     responseCode = "404", description = "User not found",
-                    content = @Content
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             )
     })
     @PatchMapping("/{username}")
-    public ResponseEntity<Map<String, String>> updateUserInfo(@PathVariable String username, @Valid @RequestBody UpdateUserDto updateUserDto) {
-
-        userService.updateUser(username, updateUserDto);
-        return ResponseEntity.status(HttpStatus.OK).body(
-                new HashMap<>() {{
-                    put("message", "Please, log in again with your new credentials");
-                }}
-        );
+    @ResponseStatus(HttpStatus.OK)
+    public UpdateUserResponse updateUserInfo(@PathVariable String username,
+                                             @Valid @RequestBody UpdateUserRequest updateUserRequest) {
+        return userService.updateUser(username, updateUserRequest);
     }
 }

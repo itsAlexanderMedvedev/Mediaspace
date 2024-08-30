@@ -1,8 +1,9 @@
 package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.exception.UserNotFoundException;
-import com.amedvedev.mediaspace.user.dto.UpdateUserDto;
-import com.amedvedev.mediaspace.user.dto.ViewUserDto;
+import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
+import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
+import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,7 +20,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
-    public void updateUser(String username, UpdateUserDto updateUserDto) {
+    public UpdateUserResponse updateUser(String username, UpdateUserRequest updateUserRequest) {
         var userOptional = findByUsernameIgnoreCase(username);
         User user;
 
@@ -29,7 +30,8 @@ public class UserService {
             throw new UserNotFoundException("User not found");
         }
 
-        String newUsername = updateUserDto.getUsername();
+        var updateUserResponse = new UpdateUserResponse();
+        String newUsername = updateUserRequest.getUsername();
         if (newUsername != null) {
             if (newUsername.equals(user.getUsername())) {
                 throw new IllegalArgumentException("New username is the same as the old one");
@@ -38,11 +40,15 @@ public class UserService {
                 throw new IllegalArgumentException("Username is already taken");
             }
             user.setUsername(newUsername);
+            updateUserResponse.setUsername(newUsername);
         }
-        if (updateUserDto.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(updateUserDto.getPassword()));
+        if (updateUserRequest.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(updateUserRequest.getPassword()));
         }
         userRepository.save(user);
+        updateUserResponse.setMessage("User updated successfully");
+
+        return updateUserResponse;
     }
 
     private boolean isUsernameFree(String username) {
@@ -57,7 +63,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public ViewUserDto me() {
+    public ViewUserResponse me() {
         var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
         ).orElseThrow(() -> new UsernameNotFoundException("You are not logged in"));

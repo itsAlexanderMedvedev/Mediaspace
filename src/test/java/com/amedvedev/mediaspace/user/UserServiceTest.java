@@ -1,7 +1,7 @@
 package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.exception.UserNotFoundException;
-import com.amedvedev.mediaspace.user.dto.UpdateUserDto;
+import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ public class UserServiceTest {
         // Given
         String oldUsername = "oldUser";
         String newUsername = "newUser";
-        UpdateUserDto updateUserDto = new UpdateUserDto(newUsername, "password");
+        UpdateUserRequest updateUserRequest = new UpdateUserRequest(newUsername, "password");
         User existingUser = new User();
         existingUser.setUsername(oldUsername);
 
@@ -56,7 +56,7 @@ public class UserServiceTest {
         when(userRepository.findByUsernameIgnoreCase(newUsername)).thenReturn(Optional.empty());
 
         // When
-        userService.updateUser(oldUsername, updateUserDto);
+        userService.updateUser(oldUsername, updateUserRequest);
 
         // Then
         verify(userRepository).save(argThat(user -> user.getUsername().equals(newUsername)));
@@ -67,7 +67,7 @@ public class UserServiceTest {
         // Given
         String username = "user";
         String newPassword = "newPassword";
-        UpdateUserDto updateUserDto = new UpdateUserDto(null, newPassword);
+        UpdateUserRequest updateUserRequest = new UpdateUserRequest(null, newPassword);
         User existingUser = new User();
         existingUser.setUsername(username);
 
@@ -75,7 +75,7 @@ public class UserServiceTest {
         when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.of(existingUser));
 
         // When
-        userService.updateUser(username, updateUserDto);
+        userService.updateUser(username, updateUserRequest);
 
         // Then
         verify(userRepository).save(argThat(user -> user.getPassword().equals("encodedPassword")));
@@ -86,14 +86,14 @@ public class UserServiceTest {
     public void updateUserNewUsernameSameAsOldThrowsException() {
         // Given
         String username = "user";
-        UpdateUserDto updateUserDto = new UpdateUserDto(username, "password");
+        UpdateUserRequest updateUserRequest = new UpdateUserRequest(username, "password");
         User existingUser = new User();
         existingUser.setUsername(username);
 
         when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.of(existingUser));
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUser(username, updateUserDto))
+        assertThatThrownBy(() -> userService.updateUser(username, updateUserRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("New username is the same as the old one");
 
@@ -105,7 +105,7 @@ public class UserServiceTest {
         // Given
         String oldUsername = "oldUsername";
         String newUsername = "newTakenUsername";
-        UpdateUserDto updateUserDto = new UpdateUserDto(newUsername, "password");
+        UpdateUserRequest updateUserRequest = new UpdateUserRequest(newUsername, "password");
         User existingUser = new User();
         existingUser.setUsername(oldUsername);
 
@@ -116,7 +116,7 @@ public class UserServiceTest {
 
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUser(oldUsername, updateUserDto))
+        assertThatThrownBy(() -> userService.updateUser(oldUsername, updateUserRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Username is already taken");
 
@@ -127,12 +127,12 @@ public class UserServiceTest {
     public void updateUserWhenUserDoesNotExistThrowsException() {
         // Given
         String username = "nonExistentUser";
-        UpdateUserDto updateUserDto = new UpdateUserDto("newUsername", "password");
+        UpdateUserRequest updateUserRequest = new UpdateUserRequest("newUsername", "password");
 
         when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUser(username, updateUserDto))
+        assertThatThrownBy(() -> userService.updateUser(username, updateUserRequest))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found");
 

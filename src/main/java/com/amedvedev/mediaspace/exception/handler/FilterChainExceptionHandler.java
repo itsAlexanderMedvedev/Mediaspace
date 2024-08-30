@@ -1,5 +1,6 @@
-package com.amedvedev.mediaspace.exception;
+package com.amedvedev.mediaspace.exception.handler;
 
+import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;

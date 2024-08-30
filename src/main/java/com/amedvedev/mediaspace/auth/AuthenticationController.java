@@ -1,8 +1,11 @@
 package com.amedvedev.mediaspace.auth;
 
-import com.amedvedev.mediaspace.exception.GeneralErrorResponse;
-import com.amedvedev.mediaspace.exception.ValidationErrorResponse;
-import com.amedvedev.mediaspace.user.dto.ViewUserDto;
+import com.amedvedev.mediaspace.auth.dto.LoginRequest;
+import com.amedvedev.mediaspace.auth.dto.LoginResponse;
+import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
+import com.amedvedev.mediaspace.auth.dto.RegisterResponse;
+import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
+import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,8 +16,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @Tag(name = "Authentication", description = "Endpoints for user authentication")
 @RestController

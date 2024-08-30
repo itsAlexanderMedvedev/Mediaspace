@@ -1,5 +1,9 @@
-package com.amedvedev.mediaspace.exception;
+package com.amedvedev.mediaspace.exception.handler;
 
+import com.amedvedev.mediaspace.exception.UserNotFoundException;
+import com.amedvedev.mediaspace.exception.UsernameAlreadyExistsException;
+import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
+import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
