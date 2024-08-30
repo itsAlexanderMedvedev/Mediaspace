@@ -44,6 +44,7 @@ public class UserService {
         }
         if (updateUserRequest.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(updateUserRequest.getPassword()));
+            updateUserResponse.setUsername(user.getUsername());
         }
         userRepository.save(user);
         updateUserResponse.setMessage("User updated successfully");
