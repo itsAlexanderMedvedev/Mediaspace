@@ -1,4 +1,4 @@
-package com.amedvedev.mediaspace.auth;
+package com.amedvedev.mediaspace.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginResponse {
+public class RegisterResponse {
 
-    private String token;
+    private String message;
 }

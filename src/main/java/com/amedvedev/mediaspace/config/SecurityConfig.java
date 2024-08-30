@@ -2,8 +2,7 @@ package com.amedvedev.mediaspace.config;
 
 import com.amedvedev.mediaspace.auth.CustomAuthenticationEntryPoint;
 import com.amedvedev.mediaspace.auth.JwtAuthenticationFilter;
-import com.amedvedev.mediaspace.exception.FilterChainExceptionHandler;
-import jakarta.servlet.http.HttpServletResponse;
+import com.amedvedev.mediaspace.exception.handler.FilterChainExceptionHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

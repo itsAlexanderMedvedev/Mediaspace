@@ -1,6 +1,10 @@
 package com.amedvedev.mediaspace.auth;
 
-import com.amedvedev.mediaspace.exception.GlobalExceptionHandler;
+import com.amedvedev.mediaspace.auth.dto.LoginRequest;
+import com.amedvedev.mediaspace.auth.dto.LoginResponse;
+import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
+import com.amedvedev.mediaspace.auth.dto.RegisterResponse;
+import com.amedvedev.mediaspace.exception.handler.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

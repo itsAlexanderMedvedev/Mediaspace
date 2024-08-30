@@ -1,9 +1,9 @@
 package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.auth.JwtAuthenticationFilter;
-import com.amedvedev.mediaspace.exception.GlobalExceptionHandler;
+import com.amedvedev.mediaspace.exception.handler.GlobalExceptionHandler;
 import com.amedvedev.mediaspace.exception.UserNotFoundException;
-import com.amedvedev.mediaspace.user.dto.UpdateUserDto;
+import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class UserControllerTest {
 
         mockMvc.perform(patch("/api/users/nonExistingUser")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateUserDto("newUsername", "newEmail@example.com"))))
+                        .content(objectMapper.writeValueAsString(new UpdateUserRequest("newUsername", "newEmail@example.com"))))
                 .andDo(print())
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.reason").value("User not found"));
@@ -59,7 +59,7 @@ class UserControllerTest {
 
     @Test
     void updateUserInfo_ShouldReturnBadRequest_WhenValidationFails() throws Exception {
-        var updateUserDto = UpdateUserDto.builder().username("ab").build();
+        var updateUserDto = UpdateUserRequest.builder().username("ab").build();
 
         mockMvc.perform(patch("/api/users/existingUser")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -71,10 +71,10 @@ class UserControllerTest {
     void updateUserInfo_ShouldReturnOk_WhenUserIsUpdatedSuccessfully() throws Exception {
         mockMvc.perform(patch("/api/users/existingUser")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new UpdateUserDto("newUsername", "newEmail@example.com"))))
+                        .content(objectMapper.writeValueAsString(new UpdateUserRequest("newUsername", "newEmail@example.com"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Please, log in again with your new credentials"));
 
-        verify(userService).updateUser(anyString(), any(UpdateUserDto.class));
+        verify(userService).updateUser(anyString(), any(UpdateUserRequest.class));
     }
 }

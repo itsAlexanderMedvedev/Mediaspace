@@ -1,7 +1,7 @@
 package com.amedvedev.mediaspace.story;
 
-import com.amedvedev.mediaspace.exception.GeneralErrorResponse;
-import com.amedvedev.mediaspace.exception.ValidationErrorResponse;
+import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
+import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import com.amedvedev.mediaspace.story.dto.CreateStoryDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
