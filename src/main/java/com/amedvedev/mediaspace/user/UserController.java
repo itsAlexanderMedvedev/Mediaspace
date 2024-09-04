@@ -67,4 +67,10 @@ public class UserController {
                                              @Valid @RequestBody UpdateUserRequest updateUserRequest) {
         return userService.updateUser(username, updateUserRequest);
     }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser() {
+        userService.deleteUser();
+    }
 }

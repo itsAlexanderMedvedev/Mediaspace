@@ -20,7 +20,7 @@ public class JwtService {
 
     private final SecretKey secretKey;
 
-    private final int defaultTokenExpiration = 100 * 60 * 60;  // one hour
+    private final int defaultTokenExpiration = 1000 * 60 * 60;  // one hour
 
     public JwtService(@Value("${jwt.secret-key}") String secretKey) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);

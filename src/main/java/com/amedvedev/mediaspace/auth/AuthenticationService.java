@@ -42,15 +42,9 @@ public class AuthenticationService {
     public LoginResponse login(LoginRequest request) {
         // Throws BadCredentialsException or InternalAuthenticationServiceException if authentication fails
         // (Handled by GlobalExceptionHandler)
-        var authenticate = authenticationManager.authenticate(
+        authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-        System.out.println(authenticationManager.getClass().getSimpleName());
-
-        System.out.println(authenticate.getAuthorities());
-        System.out.println(authenticate.getCredentials());
-        System.out.println(authenticate.getPrincipal());
-        System.out.println(authenticate.getName());
 
         User user = userService.findByUsernameIgnoreCase(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));

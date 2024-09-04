@@ -67,8 +67,17 @@ public class UserService {
     public ViewUserResponse me() {
         var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
-        ).orElseThrow(() -> new UsernameNotFoundException("You are not logged in"));
+        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
 
         return userMapper.toViewUserDto(user);
+    }
+
+    public void deleteUser() {
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+
+        user.setDeleted(true);
+        userRepository.save(user);
     }
 }

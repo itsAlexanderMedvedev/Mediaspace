@@ -109,7 +109,7 @@ public class User implements UserDetails {
         return username;
     }
 
-    // TODO: Test authorization behaviour of deleted usersi
+    // TODO: Test authorization behaviour of deleted users
     @Override
     public boolean isEnabled() {
         return !isDeleted;
