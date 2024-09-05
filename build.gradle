@@ -47,6 +47,8 @@ dependencies {
     implementation 'org.mapstruct:mapstruct:1.6.0'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'redis.clients:jedis:5.0.2' // Укажите актуальную версию
 
 
     compileOnly 'org.projectlombok:lombok'

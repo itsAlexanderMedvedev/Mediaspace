@@ -1,15 +1,19 @@
 spring:
     liquibase:
         enabled: true
-        url: jdbc:postgresql://localhost:5433/mediaspace
-        password: pass
+        url: jdbc:postgresql://localhost:5432/mediaspace
         user: postgres
+        password: pass
         driver-class-name: org.postgresql.Driver
         change-log: /db/changelog/db.changelog-master.yaml
+    data:
+        redis:
+            host: localhost
+            port: 6379
     application:
         name: mediaspace
     datasource:
-        url: jdbc:postgresql://localhost:5433/mediaspace
+        url: jdbc:postgresql://localhost:5432/mediaspace
         username: postgres
         password: pass
         driver-class-name: org.postgresql.Driver
