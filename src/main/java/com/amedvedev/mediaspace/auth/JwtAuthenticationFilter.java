@@ -49,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 userDetails = userDetailsService.loadUserByUsername(username);
                 if (!userDetails.isEnabled()) {
-                    throw new DisabledException("Your account is deleted. If you want to restore it - use /api/users/restore endpoint.123");
+                    throw new DisabledException("Your account is deleted. If you want to restore it - use /api/users/restore endpoint.");
                 }
             } catch (UsernameNotFoundException e) {
                 filterChain.doFilter(request, response);

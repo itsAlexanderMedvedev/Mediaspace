@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 public class FilterChainExceptionHandler extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper;
+    private final GlobalExceptionHandler globalExceptionHandler;
 
     @Override
     protected void doFilterInternal(
@@ -32,13 +33,15 @@ public class FilterChainExceptionHandler extends OncePerRequestFilter {
         System.out.println("--- HERE FilterChainExceptionHandler ---");
         try {
             filterChain.doFilter(request, response);
-        } catch (JwtException ex) {
+        } catch (JwtException | DisabledException ex) {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType("application/json");
 
             String message;
             if (ex instanceof MalformedJwtException) {
                 message = "Malformed JWT";
+            } else if (ex instanceof DisabledException) {
+                message = "Your account is deleted. If you want to restore it - use /api/users/restore endpoint.";
             } else {
                 message = ex.getMessage();
             }
