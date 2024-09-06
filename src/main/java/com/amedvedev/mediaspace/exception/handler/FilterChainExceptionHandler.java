@@ -38,6 +38,7 @@ public class FilterChainExceptionHandler extends OncePerRequestFilter {
             response.setContentType("application/json");
 
             String message;
+            System.out.println(ex.getClass().getSimpleName());
             if (ex instanceof MalformedJwtException) {
                 message = "Malformed JWT";
             } else if (ex instanceof DisabledException) {

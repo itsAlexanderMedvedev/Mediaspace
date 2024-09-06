@@ -29,45 +29,33 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     private String securedPath;
 
+    private String deletePath;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = "/api/auth";
         securedPath = RestAssured.baseURI + ":" + port + "/api/users/me";
+        deletePath = RestAssured.baseURI + ":" + port + "/api/users";
 
         userRepository.deleteAll();
     }
 
-    @Test
-    void shouldRegisterUser() {
+    private void registerUser(String username, String password) {
         given()
                 .contentType(ContentType.JSON)
-                .body(new RegisterRequest("username", "password"))
+                .body(new RegisterRequest(username, password))
                 .when()
                 .post("/register")
                 .then()
                 .statusCode(HttpStatus.CREATED.value())
                 .body("message", equalTo("User registered successfully"));
-
-        var user = userRepository.findByUsernameIgnoreCase("username").orElseThrow();
-        assertThat(userRepository.findById(user.getId())).isPresent();
-        assertThat(userRepository.findById(user.getId()).orElseThrow()).isEqualTo(user);
     }
 
-    @Test
-    void shouldLoginUser() {
-        given()
+    private LoginResponse loginUser(String username, String password) {
+        return given()
                 .contentType(ContentType.JSON)
-                .body(new RegisterRequest("test", "password"))
-                .when()
-                .post("/register")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .body("message", equalTo("User registered successfully"));
-
-        given()
-                .contentType(ContentType.JSON)
-                .body(new LoginRequest("test", "password"))
+                .body(new LoginRequest(username, password))
                 .when()
                 .post("/login")
                 .then()
@@ -77,15 +65,24 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldRegisterUser() {
+        registerUser("username", "password");
+
+        var user = userRepository.findByUsernameIgnoreCase("username").orElseThrow();
+        assertThat(userRepository.findById(user.getId())).isPresent();
+        assertThat(userRepository.findById(user.getId()).orElseThrow()).isEqualTo(user);
+    }
+
+    @Test
+    void shouldLoginUser() {
+        registerUser("test", "password");
+
+        loginUser("test", "password");
+    }
+
+    @Test
     void shouldNotRegisterUserWithExistingUsername() {
-        given()
-                .contentType(ContentType.JSON)
-                .body(new RegisterRequest("username", "password"))
-                .when()
-                .post("/register")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .body("message", equalTo("User registered successfully"));
+        registerUser("username", "password");
 
         given()
                 .contentType(ContentType.JSON)
@@ -99,14 +96,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldNotLoginWithIncorrectPassword() {
-        given()
-                .contentType(ContentType.JSON)
-                .body(new RegisterRequest("username", "password"))
-                .when()
-                .post("/register")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .body("message", equalTo("User registered successfully"));
+        registerUser("username", "password");
 
         given()
                 .contentType(ContentType.JSON)
@@ -120,14 +110,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldNotLoginWithIncorrectUsername() {
-        given()
-                .contentType(ContentType.JSON)
-                .body(new RegisterRequest("username", "password"))
-                .when()
-                .post("/register")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .body("message", equalTo("User registered successfully"));
+        registerUser("username", "password");
 
         given()
                 .contentType(ContentType.JSON)
@@ -140,7 +123,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotLoginWithNonExistingUser() {
+    void shouldNotLoginNonExistingUser() {
         given()
                 .contentType(ContentType.JSON)
                 .body(new LoginRequest("username", "password"))
@@ -174,24 +157,9 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldReturnMe() {
-        given()
-                .contentType(ContentType.JSON)
-                .body(new RegisterRequest("username", "password"))
-                .when()
-                .post("/register")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .body("message", equalTo("User registered successfully"));
+        registerUser("username", "password");
 
-        var authenticationResponse = given()
-                .contentType(ContentType.JSON)
-                .body(new LoginRequest("username", "password"))
-                .when()
-                .post("/login")
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract()
-                .as(LoginResponse.class);
+        var authenticationResponse = loginUser("username", "password");
 
         given()
                 .header("Authorization", "Bearer " + authenticationResponse.getToken())
@@ -200,5 +168,27 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("username", equalTo("username"));
+    }
+
+    @Test
+    void shouldNotAllowDeletedUsersAccessEndpoints() {
+        registerUser("username", "password");
+
+        var authenticationResponse = loginUser("username", "password");
+
+        given()
+                .header("Authorization", "Bearer " + authenticationResponse.getToken())
+                .when()
+                .delete(deletePath)
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        given()
+                .header("Authorization", "Bearer " + authenticationResponse.getToken())
+                .when()
+                .get(securedPath)
+                .then()
+                .statusCode(HttpStatus.UNAUTHORIZED.value())
+                .body("reason", equalTo("Your account is deleted. If you want to restore it - use /api/users/restore endpoint."));
     }
 }

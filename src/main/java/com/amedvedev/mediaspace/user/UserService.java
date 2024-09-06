@@ -47,7 +47,7 @@ public class UserService {
             updateUserResponse.setUsername(user.getUsername());
         }
         userRepository.save(user);
-        updateUserResponse.setMessage("User updated successfully");
+        updateUserResponse.setMessage("User updated successfully, please log in again with new credentials");
 
         return updateUserResponse;
     }

@@ -1,5 +1,6 @@
 package com.amedvedev.mediaspace.auth;
 
+import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -73,6 +74,7 @@ class JwtAuthenticationFilterTest {
     void doFilterInternalValidJwtUserAuthenticatedSuccessfully() throws ServletException, IOException {
         when(request.getHeader("Authorization")).thenReturn("Bearer valid_jwt");
         when(jwtService.extractUsername("valid_jwt")).thenReturn("username");
+        when(userDetails.isEnabled()).thenReturn(true);
         when(userDetailsService.loadUserByUsername("username")).thenReturn(userDetails);
         when(jwtService.isTokenValid("valid_jwt", userDetails)).thenReturn(true);
 
@@ -90,14 +92,12 @@ class JwtAuthenticationFilterTest {
     @Test
     void doFilterInternalInvalidJwtUserNotAuthenticated() throws ServletException, IOException {
         when(request.getHeader("Authorization")).thenReturn("Bearer invalid_jwt");
-        when(jwtService.extractUsername("invalid_jwt")).thenReturn("username");
-        when(userDetailsService.loadUserByUsername("username")).thenReturn(userDetails);
-        when(jwtService.isTokenValid("invalid_jwt", userDetails)).thenReturn(false);
+        when(jwtService.extractUsername("invalid_jwt")).thenThrow(MalformedJwtException.class);
 
-        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+        assertThatThrownBy(() -> jwtAuthenticationFilter.doFilterInternal(request, response, filterChain))
+                .isInstanceOf(MalformedJwtException.class);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(filterChain).doFilter(request, response);
     }
 
     @Test

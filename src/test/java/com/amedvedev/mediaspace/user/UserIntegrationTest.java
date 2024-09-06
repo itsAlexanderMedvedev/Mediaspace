@@ -4,9 +4,7 @@ import com.amedvedev.mediaspace.auth.JwtService;
 import com.amedvedev.mediaspace.testutils.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import io.restassured.RestAssured;
-import io.restassured.config.EncoderConfig;
 import io.restassured.http.ContentType;
-import io.restassured.parsing.Parser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,7 +21,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class UserIntegrationTests extends AbstractIntegrationTest {
+public class UserIntegrationTest extends AbstractIntegrationTest {
 
     @LocalServerPort
     private Integer port;
@@ -202,5 +200,15 @@ public class UserIntegrationTests extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("Username is already taken"));
+    }
+
+    @Test
+    void shouldDeleteUser() {
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete()
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
     }
 }
