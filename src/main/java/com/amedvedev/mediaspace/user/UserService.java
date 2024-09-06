@@ -1,6 +1,6 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.exception.UserNotFoundException;
+import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
 import com.amedvedev.mediaspace.user.dto.ViewUserResponse;

@@ -3,7 +3,7 @@ package com.amedvedev.mediaspace.auth;
 import com.amedvedev.mediaspace.auth.dto.LoginRequest;
 import com.amedvedev.mediaspace.auth.dto.LoginResponse;
 import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
-import com.amedvedev.mediaspace.exception.UsernameAlreadyExistsException;
+import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserService;
 import org.junit.jupiter.api.AfterEach;

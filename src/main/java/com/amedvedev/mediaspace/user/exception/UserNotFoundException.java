@@ -1,4 +1,4 @@
-package com.amedvedev.mediaspace.exception;
+package com.amedvedev.mediaspace.user.exception;
 
 public class UserNotFoundException extends RuntimeException {
     public UserNotFoundException(String message) {

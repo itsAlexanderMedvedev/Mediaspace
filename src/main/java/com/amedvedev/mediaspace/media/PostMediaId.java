@@ -12,11 +12,11 @@ import java.io.Serializable;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Embeddable
-public class MediaPostId implements Serializable {
+public class PostMediaId implements Serializable {
 
     @Column(name = "media_id")
     private Long mediaId;
 
     @Column(name = "position")
-    private int position;
+    private Integer position;
 }

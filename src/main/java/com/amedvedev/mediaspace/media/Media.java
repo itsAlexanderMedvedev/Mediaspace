@@ -27,6 +27,6 @@ public class Media {
     @Builder.Default
     @OneToMany
     @JoinColumn(name = "media_id")
-    private List<MediaPost> mediaPost = new ArrayList<>();
+    private List<PostMedia> postMedia = new ArrayList<>();
 
 }

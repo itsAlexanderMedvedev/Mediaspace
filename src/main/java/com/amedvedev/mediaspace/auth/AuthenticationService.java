@@ -4,17 +4,15 @@ import com.amedvedev.mediaspace.auth.dto.LoginRequest;
 import com.amedvedev.mediaspace.auth.dto.LoginResponse;
 import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
 import com.amedvedev.mediaspace.auth.dto.RegisterResponse;
-import com.amedvedev.mediaspace.exception.UsernameAlreadyExistsException;
+import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.MessageSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Service
 @RequiredArgsConstructor

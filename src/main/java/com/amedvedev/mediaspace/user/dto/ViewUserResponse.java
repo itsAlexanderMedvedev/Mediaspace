@@ -12,6 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ViewUserResponse {
+
+    private Long id;
     private String username;
     private String profilePictureUrl;
     private List<Long> postsIds;

@@ -27,11 +27,10 @@ public class Story {
     @JoinColumn(name = "_user_id", nullable = false)
     private User user;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "media_id", nullable = false)
     private Media media;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -40,6 +39,7 @@ public class Story {
 
     @PrePersist
     protected void onCreate() {
+        createdAt = LocalDateTime.now();
         expiresAt = createdAt.plusDays(1);
     }
 }

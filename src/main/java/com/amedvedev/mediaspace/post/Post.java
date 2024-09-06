@@ -1,6 +1,6 @@
 package com.amedvedev.mediaspace.post;
 
-import com.amedvedev.mediaspace.media.MediaPost;
+import com.amedvedev.mediaspace.media.PostMedia;
 import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.user.User;
 import jakarta.persistence.*;
@@ -49,7 +49,8 @@ public class Post {
 
     @Builder.Default
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments = new ArrayList<>();
+    @OrderBy("id.position ASC")
+    private List<PostMedia> postMediaList = new ArrayList<>();
 
     @Builder.Default
     @ManyToMany
@@ -62,8 +63,9 @@ public class Post {
 
     @Builder.Default
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("id.position ASC")
-    private List<MediaPost> mediaPosts = new ArrayList<>();
+    private List<Comment> comments = new ArrayList<>();
+
+
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;

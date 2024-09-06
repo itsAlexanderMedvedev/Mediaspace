@@ -91,6 +91,7 @@ public class User implements UserDetails {
     )
     private List<Post> taggedAt = new ArrayList<>();
 
+    @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 

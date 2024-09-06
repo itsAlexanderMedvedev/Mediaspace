@@ -2,7 +2,7 @@ package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.auth.JwtAuthenticationFilter;
 import com.amedvedev.mediaspace.exception.handler.GlobalExceptionHandler;
-import com.amedvedev.mediaspace.exception.UserNotFoundException;
+import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,8 +13,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;

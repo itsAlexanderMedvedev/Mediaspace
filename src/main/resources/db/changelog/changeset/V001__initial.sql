@@ -73,16 +73,16 @@ CREATE TABLE story (
     media_id   bigint    NOT NULL,
     created_at timestamp DEFAULT current_timestamp,
     expires_at timestamp DEFAULT current_timestamp + INTERVAL '24 hours',
-    
+
     CONSTRAINT fk_story_created_by_user FOREIGN KEY (_user_id) REFERENCES _user,
     CONSTRAINT fk_story_has_media FOREIGN KEY (media_id) REFERENCES media
 );
 
-CREATE TABLE media_post (
-    media_id bigint  NOT NULL,
+CREATE TABLE post_media (
     post_id  bigint  NOT NULL,
+    media_id bigint  NOT NULL,
     position integer NOT NULL,
-    CONSTRAINT pk_media_post PRIMARY KEY (media_id, post_id),
+    CONSTRAINT pk_media_position PRIMARY KEY (media_id, position),
     CONSTRAINT fk_media_associated_with_post FOREIGN KEY (media_id) REFERENCES media,
     CONSTRAINT fk_post_has_media FOREIGN KEY (post_id) REFERENCES post
 );

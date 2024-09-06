@@ -1,6 +1,6 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.exception.UserNotFoundException;
+import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -9,11 +9,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "media_post")
-public class MediaPost {
+@Table(name = "post_media")
+public class PostMedia {
 
     @EmbeddedId
-    private MediaPostId id;
+    private PostMediaId id;
 
     @ManyToOne
     @MapsId("mediaId")
@@ -23,5 +23,4 @@ public class MediaPost {
     @ManyToOne
     @JoinColumn(name = "post_id")
     private Post post;
-
 }
