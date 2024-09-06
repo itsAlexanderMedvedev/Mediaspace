@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,6 +48,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserDetails userDetails;
             try {
                 userDetails = userDetailsService.loadUserByUsername(username);
+                if (!userDetails.isEnabled()) {
+                    throw new DisabledException("Your account is deleted. If you want to restore it - use /api/users/restore endpoint.123");
+                }
             } catch (UsernameNotFoundException e) {
                 filterChain.doFilter(request, response);
                 return;
@@ -67,6 +71,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.equals("/error");
+        return path.equals("/error") || path.startsWith("/api/auth/") || path.equals("/api/users/restore");
     }
 }

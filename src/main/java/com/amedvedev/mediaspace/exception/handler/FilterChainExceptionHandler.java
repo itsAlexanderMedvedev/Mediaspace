@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -28,6 +29,7 @@ public class FilterChainExceptionHandler extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws IOException {
+        System.out.println("--- HERE FilterChainExceptionHandler ---");
         try {
             filterChain.doFilter(request, response);
         } catch (JwtException ex) {
