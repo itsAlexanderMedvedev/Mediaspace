@@ -1,6 +1,8 @@
 package com.amedvedev.mediaspace.user.exception;
 
-public class UserNotFoundException extends RuntimeException {
+import com.amedvedev.mediaspace.exception.ElementNotFoundException;
+
+public class UserNotFoundException extends ElementNotFoundException {
     public UserNotFoundException(String message) {
         super(message);
     }

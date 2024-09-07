@@ -3,8 +3,11 @@ package com.amedvedev.mediaspace.post;
 import com.amedvedev.mediaspace.media.PostMedia;
 import com.amedvedev.mediaspace.media.PostMediaMapper;
 import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
+import com.amedvedev.mediaspace.post.comment.Comment;
+import com.amedvedev.mediaspace.post.comment.CommentMapper;
+import com.amedvedev.mediaspace.post.comment.dto.CommentDto;
+import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
-import lombok.RequiredArgsConstructor;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -20,6 +23,7 @@ import java.util.stream.Collectors;
 public abstract class PostMapper {
 
     private PostMediaMapper postMediaMapper;
+    private CommentMapper commentMapper;
 
     @Mapping(source = "user.username", target = "username")
     @Mapping(source = "postMediaList", target = "postMediaList", qualifiedByName = "mapPostMediaList")
@@ -27,15 +31,29 @@ public abstract class PostMapper {
     @Mapping(target = "commentsCount", expression = "java(post.getComments().size())")
     public abstract ViewPostResponse toViewPostResponse(Post post);
 
+    @Mapping(source = "id", target = "postId")
+    @Mapping(target = "comments", qualifiedByName = "mapComments")
+    public abstract ViewPostCommentsResponse toViewPostCommentsResponse(Post post);
+
     @Named("mapPostMediaList")
     List<ViewPostMediaResponse> mapPostMediaList(List<PostMedia> postMediaList) {
         return postMediaList.stream()
                 .map(postMedia -> postMediaMapper.toViewPostMediaDto(postMedia))
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    @Named("mapComments")
+    List<CommentDto> mapComments(List<Comment> comments) {
+        return comments.stream().map(commentMapper::toCommentDto).toList();
     }
 
     @Autowired
     public void setPostMediaMapper(PostMediaMapper postMediaMapper) {
         this.postMediaMapper = postMediaMapper;
+    }
+
+    @Autowired
+    public void setCommentMapper(CommentMapper commentMapper) {
+        this.commentMapper = commentMapper;
     }
 }

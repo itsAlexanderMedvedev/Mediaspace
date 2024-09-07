@@ -1,9 +1,11 @@
 package com.amedvedev.mediaspace.exception.handler;
 
-import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
-import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
+import com.amedvedev.mediaspace.exception.ElementNotFoundException;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
+import com.amedvedev.mediaspace.post.comment.exception.UnauthorizedCommentDeletionException;
+import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
+import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
@@ -62,9 +64,15 @@ public class GlobalExceptionHandler {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
-    @ExceptionHandler({UserNotFoundException.class, NoResourceFoundException.class})
+    @ExceptionHandler({ElementNotFoundException.class, NoResourceFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public GeneralErrorResponse handleUserNotFoundException(Exception ex) {
+        return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
+    }
+
+    @ExceptionHandler({StoriesLimitReachedException.class, UnauthorizedCommentDeletionException.class})
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public GeneralErrorResponse handleStoriesLimitReachedException(StoriesLimitReachedException ex) {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 

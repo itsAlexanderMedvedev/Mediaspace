@@ -25,7 +25,6 @@ public class AuthenticationService {
 
     public RegisterResponse register(RegisterRequest request) {
 
-        // TODO: test this
         if (userService.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
             throw new UsernameAlreadyExistsException("This username is already taken");
         }

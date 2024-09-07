@@ -65,8 +65,6 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
-
-
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
 }

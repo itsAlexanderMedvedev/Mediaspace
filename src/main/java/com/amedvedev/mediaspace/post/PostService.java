@@ -3,16 +3,21 @@ package com.amedvedev.mediaspace.post;
 import com.amedvedev.mediaspace.media.Media;
 import com.amedvedev.mediaspace.media.PostMedia;
 import com.amedvedev.mediaspace.media.PostMediaId;
+import com.amedvedev.mediaspace.post.comment.Comment;
+import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
+import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
+import com.amedvedev.mediaspace.post.comment.exception.CommentNotFoundException;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
 import com.amedvedev.mediaspace.post.exception.PostNotFoundException;
 import com.amedvedev.mediaspace.user.UserRepository;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -40,18 +45,11 @@ public class PostService {
                     var mediaPostId = new PostMediaId(media.getId(), index);
                     return new PostMedia(mediaPostId, media, post);
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         post.setPostMediaList(postMediaList);
 
         postRepository.save(post);
-
-        return postMapper.toViewPostResponse(post);
-    }
-
-    public ViewPostResponse getPostById(Long id) {
-        var post = postRepository.findById(id)
-                .orElseThrow(() -> new PostNotFoundException("Post not found"));
 
         return postMapper.toViewPostResponse(post);
     }
@@ -64,10 +62,74 @@ public class PostService {
 
         return posts.stream()
                 .map(postMapper::toViewPostResponse)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    public ViewPostResponse getPostById(Long id) {
+        var post = postRepository.findById(id)
+                .orElseThrow(() -> new PostNotFoundException("Post not found"));
+
+        return postMapper.toViewPostResponse(post);
     }
 
     public void deletePost(Long id) {
         postRepository.deleteById(id);
+    }
+
+    public void addComment(Long postId, AddCommentRequest request) {
+        var post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("Post not found"));
+
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+
+        var comment = Comment.builder()
+                .user(user)
+                .post(post)
+                .body(request.getBody())
+                .build();
+
+        post.getComments().add(comment);
+
+        postRepository.save(post);
+    }
+
+    public ViewPostCommentsResponse getComments(Long postId) {
+        var post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("Post not found"));
+
+        return postMapper.toViewPostCommentsResponse(post);
+    }
+
+    public void likePost(Long postId) {
+        var post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("Post not found"));
+
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+
+        post.getLikedByUsers().add(user);
+
+        postRepository.save(post);
+    }
+
+    public void deleteComment(Long postId, Long commentId) {
+        var post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("Post not found"));
+
+        var comment = post.getComments().stream()
+                .filter(c -> c.getId().equals(commentId))
+                .findFirst()
+                .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
+
+        if (!comment.getUser().getUsername().equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
+            throw new IllegalArgumentException("You can only delete your own comments");
+        }
+
+        post.getComments().remove(comment);
+
+        postRepository.save(post);
     }
 }

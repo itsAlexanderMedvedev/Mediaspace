@@ -1,5 +1,6 @@
 package com.amedvedev.mediaspace.testutils;
 
+import com.redis.testcontainers.RedisContainer;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -10,8 +11,12 @@ public abstract class AbstractIntegrationTest {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
             DockerImageName.parse("postgres:16.2-alpine"));
 
+    static RedisContainer redis = new RedisContainer(
+            RedisContainer.DEFAULT_IMAGE_NAME.withTag(RedisContainer.DEFAULT_TAG));
+
     static {
         postgres.start();
+        redis.start();
     }
 
     @DynamicPropertySource
@@ -23,5 +28,8 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.liquibase.url", postgres::getJdbcUrl);
         registry.add("spring.liquibase.user", postgres::getUsername);
         registry.add("spring.liquibase.password", postgres::getPassword);
+
+        registry.add("spring.redis.host", redis::getHost);
+        registry.add("spring.redis.port", redis::getRedisPort);
     }
 }
