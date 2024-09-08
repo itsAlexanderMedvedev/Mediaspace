@@ -1,6 +1,6 @@
 package com.amedvedev.mediaspace.post;
 
-import com.amedvedev.mediaspace.media.PostMedia;
+import com.amedvedev.mediaspace.media.postmedia.PostMedia;
 import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.user.User;
 import jakarta.persistence.*;
@@ -48,23 +48,26 @@ public class Post {
     private LocalDateTime updatedAt;
 
     @Builder.Default
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id.position ASC")
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostMedia> postMediaList = new ArrayList<>();
 
+    // TODO: RETHINK THAT
     @Builder.Default
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinTable(
-            name = "user_like",
+            name = "_like",
             joinColumns = @JoinColumn(name = "post_id"),
             inverseJoinColumns = @JoinColumn(name = "_user_id")
     )
     private Set<User> likedByUsers = new HashSet<>();
 
     @Builder.Default
+    @OrderBy("createdAt DESC")
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
+    @Builder.Default
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
+    private boolean isDeleted = false;
 }

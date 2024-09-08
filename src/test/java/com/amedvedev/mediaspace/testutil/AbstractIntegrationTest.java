@@ -1,6 +1,8 @@
-package com.amedvedev.mediaspace.testutils;
+package com.amedvedev.mediaspace.testutil;
 
 import com.redis.testcontainers.RedisContainer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -8,8 +10,11 @@ import org.testcontainers.utility.DockerImageName;
 
 public abstract class AbstractIntegrationTest {
 
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
+
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-            DockerImageName.parse("postgres:16.2-alpine"));
+            DockerImageName.parse("postgres:latest"));
 
     static RedisContainer redis = new RedisContainer(
             RedisContainer.DEFAULT_IMAGE_NAME.withTag(RedisContainer.DEFAULT_TAG));

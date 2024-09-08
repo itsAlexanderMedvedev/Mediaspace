@@ -14,8 +14,6 @@ import java.util.List;
 public class CreatePostRequest {
 
     // TODO: add open api docs
-
-    private String username;
     private String title;
     private String description;
 

@@ -1,4 +1,4 @@
-package com.amedvedev.mediaspace.media;
+package com.amedvedev.mediaspace.media.postmedia;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

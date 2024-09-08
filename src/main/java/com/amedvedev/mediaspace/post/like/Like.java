@@ -4,15 +4,20 @@ import com.amedvedev.mediaspace.post.Post;
 import com.amedvedev.mediaspace.user.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Entity
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "user_like")
+@Table(name = "_like")
+@Filter(name = "is_deleted", condition = "is_deleted = false")
+@FilterDef(name = "is_deleted")
 public class Like {
 
     @EmbeddedId
@@ -31,4 +36,10 @@ public class Like {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
 }
+
+

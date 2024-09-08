@@ -1,7 +1,7 @@
 package com.amedvedev.mediaspace.post;
 
-import com.amedvedev.mediaspace.media.PostMedia;
-import com.amedvedev.mediaspace.media.PostMediaMapper;
+import com.amedvedev.mediaspace.media.postmedia.PostMedia;
+import com.amedvedev.mediaspace.media.postmedia.PostMediaMapper;
 import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
 import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.post.comment.CommentMapper;
@@ -15,7 +15,6 @@ import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 // abstract class to allow usage of another mapper
@@ -44,7 +43,10 @@ public abstract class PostMapper {
 
     @Named("mapComments")
     List<CommentDto> mapComments(List<Comment> comments) {
-        return comments.stream().map(commentMapper::toCommentDto).toList();
+        return comments.stream()
+                .map(commentMapper::toCommentDto)
+//                .sorted(Comparator.comparing(CommentDto::getWrittenAt).reversed())
+                .toList();
     }
 
     @Autowired

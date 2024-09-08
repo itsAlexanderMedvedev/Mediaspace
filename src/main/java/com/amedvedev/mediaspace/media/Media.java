@@ -1,10 +1,8 @@
 package com.amedvedev.mediaspace.media;
 
+import com.amedvedev.mediaspace.media.postmedia.PostMedia;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
@@ -24,9 +22,8 @@ public class Media {
     @Column(name = "url", nullable = false, length = 4096)
     private String url;
 
-    @Builder.Default
-    @OneToMany
+    @OneToOne(mappedBy = "media")
     @JoinColumn(name = "media_id")
-    private List<PostMedia> postMedia = new ArrayList<>();
+    private PostMedia postMedia;
 
 }

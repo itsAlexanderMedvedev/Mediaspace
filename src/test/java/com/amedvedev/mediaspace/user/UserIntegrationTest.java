@@ -1,7 +1,7 @@
 package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.auth.JwtService;
-import com.amedvedev.mediaspace.testutils.AbstractIntegrationTest;
+import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -27,10 +27,10 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     private Integer port;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    JwtService jwtService;
+    private JwtService jwtService;
 
     private User user;
 

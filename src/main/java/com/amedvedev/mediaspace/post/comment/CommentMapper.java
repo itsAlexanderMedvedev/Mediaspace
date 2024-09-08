@@ -12,6 +12,7 @@ public interface CommentMapper {
 
     @Mapping(source="user.username", target = "author")
     @Mapping(target="comments", qualifiedByName = "commentsToDto")
+    @Mapping(source="createdAt", target = "writtenAt")
     CommentDto toCommentDto(Comment comment);
 
     @Named("commentsToDto")

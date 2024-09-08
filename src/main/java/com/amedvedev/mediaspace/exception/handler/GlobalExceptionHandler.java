@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -73,6 +74,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({StoriesLimitReachedException.class, UnauthorizedCommentDeletionException.class})
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public GeneralErrorResponse handleStoriesLimitReachedException(StoriesLimitReachedException ex) {
+        return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public GeneralErrorResponse handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 

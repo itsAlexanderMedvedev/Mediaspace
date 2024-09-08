@@ -51,6 +51,7 @@ public class Comment {
     @OneToMany(mappedBy = "parentComment")
     private List<Comment> comments = new ArrayList<>();
 
+    @Builder.Default
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
+    private boolean isDeleted = false;
 }

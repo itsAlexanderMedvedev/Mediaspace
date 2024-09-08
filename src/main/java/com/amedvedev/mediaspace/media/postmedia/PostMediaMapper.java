@@ -1,4 +1,4 @@
-package com.amedvedev.mediaspace.media;
+package com.amedvedev.mediaspace.media.postmedia;
 
 import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
 import org.mapstruct.Mapper;

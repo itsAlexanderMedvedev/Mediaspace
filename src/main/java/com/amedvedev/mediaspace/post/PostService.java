@@ -1,8 +1,8 @@
 package com.amedvedev.mediaspace.post;
 
 import com.amedvedev.mediaspace.media.Media;
-import com.amedvedev.mediaspace.media.PostMedia;
-import com.amedvedev.mediaspace.media.PostMediaId;
+import com.amedvedev.mediaspace.media.postmedia.PostMedia;
+import com.amedvedev.mediaspace.media.postmedia.PostMediaId;
 import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
@@ -29,8 +29,9 @@ public class PostService {
     private final PostMapper postMapper;
 
     public ViewPostResponse createPost(CreatePostRequest request) {
-        var user = userRepository.findByUsernameIgnoreCase(request.getUsername())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+         var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
 
         var post = Post.builder()
                 .user(user)
@@ -42,7 +43,7 @@ public class PostService {
                 .mapToObj(index -> {
                     var url = request.getMediaUrls().get(index);
                     var media = Media.builder().url(url).build();
-                    var mediaPostId = new PostMediaId(media.getId(), index);
+                    var mediaPostId = new PostMediaId(media.getId(), index + 1);
                     return new PostMedia(mediaPostId, media, post);
                 })
                 .toList();
@@ -58,7 +59,7 @@ public class PostService {
         var user = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        var posts = postRepository.findAllByUserId(user.getId());
+        var posts = postRepository.findAllByUserIdOrderByCreatedAt(user.getId());
 
         return posts.stream()
                 .map(postMapper::toViewPostResponse)

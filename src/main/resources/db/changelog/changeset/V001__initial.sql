@@ -34,9 +34,10 @@ CREATE TABLE post (
     CONSTRAINT fk_post_created_by_user FOREIGN KEY (_user_id) REFERENCES _user
 );
 
-CREATE TABLE user_like (
+CREATE TABLE _like (
     _user_id   bigint    NOT NULL,
     post_id    bigint    NOT NULL,
+
     created_at timestamp DEFAULT current_timestamp,
     
     CONSTRAINT pk_like PRIMARY KEY (_user_id, post_id),

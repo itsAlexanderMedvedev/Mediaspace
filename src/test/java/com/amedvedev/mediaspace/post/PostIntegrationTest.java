@@ -1,14 +1,39 @@
 package com.amedvedev.mediaspace.post;
 
 import com.amedvedev.mediaspace.auth.JwtService;
-import com.amedvedev.mediaspace.testutils.AbstractIntegrationTest;
+import com.amedvedev.mediaspace.media.Media;
+import com.amedvedev.mediaspace.media.MediaRepository;
+import com.amedvedev.mediaspace.media.postmedia.PostMedia;
+import com.amedvedev.mediaspace.media.postmedia.PostMediaId;
+import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
+import com.amedvedev.mediaspace.media.postmedia.PostMediaRepository;
+import com.amedvedev.mediaspace.post.comment.Comment;
+import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
+import com.amedvedev.mediaspace.post.comment.dto.CommentDto;
+import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
+import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
+import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
+import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
+
+import java.util.List;
+import java.util.stream.IntStream;
+
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class PostIntegrationTest extends AbstractIntegrationTest {
@@ -17,10 +42,19 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     private Integer port;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    JwtService jwtService;
+    private PostRepository postRepository;
+
+    @Autowired
+    private PostMediaRepository postMediaRepository;
+
+    @Autowired
+    private MediaRepository mediaRepository;
+
+    @Autowired
+    private JwtService jwtService;
 
     private User user;
 
@@ -32,8 +66,302 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         RestAssured.basePath = "/api/posts";
 
         userRepository.deleteAll();
+        postRepository.deleteAll();
+        resetAutoIncrement();
 
         user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);
+    }
+
+    private void resetAutoIncrement() {
+        jdbcTemplate.execute("ALTER SEQUENCE post_id_seq RESTART WITH 1");
+        jdbcTemplate.execute("ALTER SEQUENCE media_id_seq RESTART WITH 1");
+    }
+
+    private Post createPost(String title, String description) {
+        var post = Post.builder()
+                .user(user)
+                .title(title)
+                .description(description)
+                .build();
+
+        var mediaUrls = List.of("https://example.com/image.jpg", "https://example.com/video.mp4");
+
+        var postMediaList = IntStream.range(0, mediaUrls.size())
+                .mapToObj(index -> {
+                    var url = mediaUrls.get(index);
+                    var media = Media.builder().url(url).build();
+                    var mediaPostId = new PostMediaId(media.getId(), index + 1);
+                    return new PostMedia(mediaPostId, media, post);
+                })
+                .toList();
+
+        post.setPostMediaList(postMediaList);
+
+        return postRepository.save(post);
+    }
+
+    private Post addCommentsToPost(Post post, List<String> comments) {
+        comments.forEach(body -> {
+            var comment = Comment.builder()
+                    .body(body)
+                    .post(post)
+                    .user(user)
+                    .build();
+
+            post.getComments().add(comment);
+        });
+
+        return postRepository.save(post);
+    }
+
+    private CreatePostRequest createPostRequest(String title, String description) {
+        return CreatePostRequest.builder()
+                .title(title)
+                .description(description)
+                .mediaUrls(List.of("https://example.com/image.jpg", "https://example.com/video.mp4"))
+                .build();
+    }
+
+    private ViewPostResponse getViewPostResponseExpected(String title, String description, Long id, Long[] mediaIds) {
+        var viewPostMediaList = List.of(
+                ViewPostMediaResponse.builder()
+                .id(mediaIds[0])
+                .url("https://example.com/image.jpg")
+                .position(1)
+                .build(),
+
+                ViewPostMediaResponse.builder()
+                .id(mediaIds[1])
+                .url("https://example.com/video.mp4")
+                .position(2)
+                .build()
+        );
+
+        return ViewPostResponse.builder()
+                .id(id)
+                .username(user.getUsername())
+                .title(title)
+                .description(description)
+                .postMediaList(viewPostMediaList)
+                .build();
+    }
+
+    @Test
+    void shouldNotBeAbleToCreatePostWithoutAuthorization() {
+        given()
+                .when()
+                .post()
+                .then()
+                .statusCode(HttpStatus.UNAUTHORIZED.value())
+                .body("reason", equalTo("Full authentication is required to access this resource"));
+    }
+
+    @Test
+    void shouldCreatePost() {
+        var objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        var createPostRequest = createPostRequest("Title", "Hello, World!");
+        var expectedViewPostResponse = getViewPostResponseExpected("Title", "Hello, World!", 1L, new Long[]{1L, 2L});
+
+        var actualViewPostResponse = given()
+                .header("Authorization", "Bearer " + token)
+                .contentType("application/json")
+                .body(createPostRequest)
+                .when()
+                .post()
+                .then()
+                .statusCode(HttpStatus.CREATED.value())
+                .extract().jsonPath().getObject(".", ViewPostResponse.class);
+
+        actualViewPostResponse.setCreatedAt(null);
+
+        assertThat(expectedViewPostResponse).isEqualTo(actualViewPostResponse);
+    }
+
+    @Test
+    void shouldReturnPostsOfUser(){
+        createPost("Title1", "Hello, World!");
+        createPost("Title2", "Hello, World!");
+
+        var viewPostResponse1 = getViewPostResponseExpected("Title1", "Hello, World!", 1L, new Long[]{1L, 2L});
+        var viewPostResponse2 = getViewPostResponseExpected("Title2", "Hello, World!", 2L, new Long[]{3L, 4L});
+
+        var expectedPostList = List.of(viewPostResponse1, viewPostResponse2);
+
+        var actualPostsList = given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/user/{username}", "user")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract().jsonPath().getList(".", ViewPostResponse.class);
+
+        actualPostsList.forEach(el -> el.setCreatedAt(null));
+
+        assertThat(actualPostsList).containsExactlyElementsOf(expectedPostList);
+    }
+
+    @Test
+    void shouldNotBeAbleToAccessPostsOfUserWithInvalidUsername() {
+        createPost("Title1", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/user/{username}", "invalid-username")
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("User not found"));
+    }
+
+    @Test
+    void shouldBeAbleToAddCommentToPost() {
+        createPost("Title", "Hello, World!");
+
+        var addCommentRequest = AddCommentRequest.builder()
+                .body("Comment1")
+                .build();
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .contentType("application/json")
+                .body(addCommentRequest)
+                .when()
+                .post("/{postId}/comments", 1)
+                .then()
+                .statusCode(HttpStatus.CREATED.value());
+    }
+
+    @Test
+    void shouldNotBeAbleToAddCommentToPostWithInvalidPostId() {
+        createPost("Title", "Hello, World!");
+
+        var addCommentRequest = AddCommentRequest.builder()
+                .body("Comment1")
+                .build();
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .contentType("application/json")
+                .body(addCommentRequest)
+                .when()
+                .post("/{postId}/comments", 2)
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("Post not found"));
+    }
+
+    @Test
+    void shouldBeAbleToViewComments() {
+        var post = createPost("Title", "Hello, World!");
+        var comments = List.of("Comment1", "Comment2", "Comment3");
+        post = addCommentsToPost(post, comments);
+
+        var viewPostCommentResponse = given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/{postId}/comments", 1)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .log().all()
+                .extract().jsonPath().getObject(".", ViewPostCommentsResponse.class);
+
+        var listOfComments = viewPostCommentResponse.getComments().stream()
+                .map(CommentDto::getBody)
+                .toList();
+        var authorsList = viewPostCommentResponse.getComments().stream()
+                .map(CommentDto::getAuthor)
+                .toList();
+
+        assertThat(viewPostCommentResponse.getComments().size()).isEqualTo(3);
+        assertThat(viewPostCommentResponse.getPostId()).isEqualTo(1);
+        assertThat(listOfComments).containsExactlyElementsOf(comments.reversed());
+        assertThat(authorsList).allMatch(author -> author.equals(user.getUsername()));
+    }
+
+    @Test
+    void shouldDeleteMediaAndCommentsWhenDeletingPost() {
+        var post = createPost("Title", "Hello, World!");
+        var comments = List.of("Comment1", "Comment2", "Comment3");
+        post = addCommentsToPost(post, comments);
+
+        var mediaList = postMediaRepository.findAllByPostId(post.getId()).stream()
+                .map(PostMedia::getMedia)
+                .toList();
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{id}", post.getId())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        assertThat(postRepository.findById(post.getId())).isEmpty();
+        assertThat(postMediaRepository.findAllByPostId(post.getId())).isEmpty();
+        assertThat(mediaRepository.findAllById(mediaList.stream().map(Media::getId).toList())).isEmpty();
+    }
+
+    @Test
+    void shouldReturnPostById() {
+        createPost("Title", "Hello, World!");
+
+        var expectedViewPostResponse = getViewPostResponseExpected("Title", "Hello, World!", 1L, new Long[]{1L, 2L});
+
+        var actualViewPostResponse = given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/{id}", 1)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract().jsonPath().getObject(".", ViewPostResponse.class);
+
+        actualViewPostResponse.setCreatedAt(null);
+
+        assertThat(expectedViewPostResponse).isEqualTo(actualViewPostResponse);
+    }
+
+    @Test
+    void shouldNotBeAbleToAccessPostByIdWithInvalidId() {
+        createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/{id}", 2)
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("Post not found"));
+    }
+
+    @Test
+    void shouldLikePost() {
+        var post = createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .put("/{id}/like", post.getId())
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        var likedPost = postRepository.findById(post.getId()).orElseThrow();
+        assertThat(likedPost.getLikedByUsers().size()).isEqualTo(1);
+        assertThat(likedPost.getLikedByUsers()).contains(user);
+    }
+
+    @Test
+    void shouldDeletePost() {
+        createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{id}", 1)
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
     }
 }

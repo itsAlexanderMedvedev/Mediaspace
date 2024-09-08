@@ -3,7 +3,7 @@ package com.amedvedev.mediaspace.auth;
 import com.amedvedev.mediaspace.auth.dto.LoginRequest;
 import com.amedvedev.mediaspace.auth.dto.LoginResponse;
 import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
-import com.amedvedev.mediaspace.testutils.AbstractIntegrationTest;
+import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.UserRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;

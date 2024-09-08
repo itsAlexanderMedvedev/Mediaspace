@@ -168,8 +168,8 @@ public class PostController {
                     content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             )
     })
-    @PutMapping("/{postId}/likes")
-    @ResponseStatus(HttpStatus.OK)
+    @PutMapping("/{postId}/like")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void likePost(@PathVariable Long postId) {
         postService.likePost(postId);
     }
