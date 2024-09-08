@@ -16,8 +16,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "_like")
-@Filter(name = "is_deleted", condition = "is_deleted = false")
-@FilterDef(name = "is_deleted")
 public class Like {
 
     @EmbeddedId
