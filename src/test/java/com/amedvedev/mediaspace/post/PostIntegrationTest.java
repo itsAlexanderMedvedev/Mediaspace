@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import java.util.List;
@@ -67,17 +68,10 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = "/api/posts";
 
-        userRepository.deleteAll();
-        postRepository.deleteAll();
-        resetAutoIncrement();
+        jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
 
         user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);
-    }
-
-    private void resetAutoIncrement() {
-        jdbcTemplate.execute("ALTER SEQUENCE post_id_seq RESTART WITH 1");
-        jdbcTemplate.execute("ALTER SEQUENCE media_id_seq RESTART WITH 1");
     }
 
     private Post createPost(String title, String description) {

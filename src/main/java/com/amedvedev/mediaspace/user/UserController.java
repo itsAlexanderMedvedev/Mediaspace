@@ -61,11 +61,10 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             )
     })
-    @PatchMapping("/{username}")
+    @PatchMapping
     @ResponseStatus(HttpStatus.OK)
-    public UpdateUserResponse updateUserInfo(@PathVariable String username,
-                                             @Valid @RequestBody UpdateUserRequest updateUserRequest) {
-        return userService.updateUser(username, updateUserRequest);
+    public UpdateUserResponse updateUserInfo(@Valid @RequestBody UpdateUserRequest updateUserRequest) {
+        return userService.updateUser(updateUserRequest);
     }
 
     @DeleteMapping

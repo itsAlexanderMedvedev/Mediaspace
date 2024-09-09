@@ -16,7 +16,6 @@ import com.amedvedev.mediaspace.user.UserRepository;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,7 +32,7 @@ public class PostService {
     public ViewPostResponse createPost(CreatePostRequest request) {
          var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
-        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         var post = Post.builder()
                 .user(user)
@@ -85,7 +84,7 @@ public class PostService {
 
         var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
-        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         var comment = Comment.builder()
                 .user(user)
@@ -111,7 +110,7 @@ public class PostService {
 
         var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
-        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         post.getLikes().add(Like.builder().id(new LikeId(user.getId(), postId)).post(post).user(user).build());
 

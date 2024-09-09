@@ -49,9 +49,9 @@ class UserControllerTest {
     void updateUserInfo_ShouldReturnNotFound_WhenUserIsNotFound() throws Exception {
         var updateUserDto = new UpdateUserRequest("newUsername", "newEmail@example.com");
 
-        doThrow(new UserNotFoundException("User not found")).when(userService).updateUser(anyString(), any());
+        doThrow(new UserNotFoundException("User not found")).when(userService).updateUser(any());
 
-        mockMvc.perform(patch("/api/users/nonExistingUser")
+        mockMvc.perform(patch("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateUserDto)))
                 .andDo(print())
@@ -63,7 +63,7 @@ class UserControllerTest {
     void updateUserInfo_ShouldReturnBadRequest_WhenValidationFails() throws Exception {
         var updateUserDto = UpdateUserRequest.builder().username("ab").build();
 
-        mockMvc.perform(patch("/api/users/existingUser")
+        mockMvc.perform(patch("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateUserDto)))
                 .andDo(print())
@@ -76,16 +76,15 @@ class UserControllerTest {
         var updateUserResponseDto = new UpdateUserResponse(
                 "newUsername", "User updated successfully, please log in again with new credentials");
 
-        doReturn(updateUserResponseDto).when(userService).updateUser(anyString(), any(UpdateUserRequest.class));
+        doReturn(updateUserResponseDto).when(userService).updateUser(any(UpdateUserRequest.class));
 
-        mockMvc.perform(patch("/api/users/existingUser")
+        mockMvc.perform(patch("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateUserDto)))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(
                         "User updated successfully, please log in again with new credentials"));
 
-        verify(userService).updateUser(anyString(), any(UpdateUserRequest.class));
+        verify(userService).updateUser(any(UpdateUserRequest.class));
     }
 }

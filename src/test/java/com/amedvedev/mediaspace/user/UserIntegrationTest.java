@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.stream.Stream;
 
@@ -26,9 +27,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
     @LocalServerPort
     private Integer port;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private UserRepository userRepository;
@@ -45,7 +43,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = "/api/users";
 
-        jdbcTemplate.execute("DELETE FROM _user");
+        jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
 
         user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);
@@ -92,7 +90,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + token)
                 .body(updateUserRequest)
                 .when()
-                .patch("/{username}", user.getUsername())
+                .patch()
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("username", equalTo("new-username"));
@@ -109,7 +107,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .body(updateUserRequest)
                 .log().all()
                 .when()
-                .patch("/{username}", user.getUsername())
+                .patch()
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -138,9 +136,8 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + token)
                 .body(updateUserRequest)
                 .when()
-                .patch("/{username}", user.getUsername())
+                .patch()
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.OK.value())
                 .body("username", equalTo(user.getUsername()));
     }
@@ -152,12 +149,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)
                 .body(updateUserRequest)
-                .log().all()
                 .when()
-                .log().all()
-                .patch("/{username}", user.getUsername())
+                .patch()
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("errors.password", equalTo(expectedErrorMessage));
     }
@@ -184,7 +178,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + token)
                 .body(updateUserRequest)
                 .when()
-                .patch("/{username}", user.getUsername())
+                .patch()
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("New username is the same as the old one"));
@@ -200,7 +194,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + token)
                 .body(updateUserRequest)
                 .when()
-                .patch("/{username}", user.getUsername())
+                .patch()
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())

@@ -1,16 +1,14 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
 import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
+import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.html.Option;
 import java.util.Optional;
 
 @Service
@@ -21,15 +19,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
-    public UpdateUserResponse updateUser(String username, UpdateUserRequest updateUserRequest) {
-        var userOptional = findByUsernameIgnoreCase(username);
-        User user;
-
-        if (userOptional.isPresent()) {
-            user = userOptional.get();
-        } else {
-            throw new UserNotFoundException("User not found");
-        }
+    public UpdateUserResponse updateUser(UpdateUserRequest updateUserRequest) {
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         var updateUserResponse = new UpdateUserResponse();
         String newUsername = updateUserRequest.getUsername();
@@ -74,7 +67,7 @@ public class UserService {
     public ViewUserResponse me() {
         var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
-        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         return userMapper.toViewUserDto(user);
     }
@@ -82,7 +75,7 @@ public class UserService {
     public void deleteUser() {
         var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
-        ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         user.setDeleted(true);
         userRepository.save(user);
