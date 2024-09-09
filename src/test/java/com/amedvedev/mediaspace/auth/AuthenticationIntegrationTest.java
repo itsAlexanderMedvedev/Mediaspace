@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +26,10 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     private Integer port;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private String securedPath;
 
@@ -38,16 +42,19 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         securedPath = RestAssured.baseURI + ":" + port + "/api/users/me";
         deletePath = RestAssured.baseURI + ":" + port + "/api/users";
 
-        userRepository.deleteAll();
+        jdbcTemplate.execute("DELETE FROM _user; DELETE FROM post");
     }
 
     private void registerUser(String username, String password) {
+        System.out.println(userRepository.findAllIncludingSoftDeleted());
+
         given()
                 .contentType(ContentType.JSON)
                 .body(new RegisterRequest(username, password))
                 .when()
                 .post("/register")
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.CREATED.value())
                 .body("message", equalTo("User registered successfully"));
     }
@@ -68,7 +75,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     void shouldRegisterUser() {
         registerUser("username", "password");
 
-        var user = userRepository.findByUsernameIgnoreCase("username").orElseThrow();
+        var user = userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted("username").orElseThrow();
         assertThat(userRepository.findById(user.getId())).isPresent();
         assertThat(userRepository.findById(user.getId()).orElseThrow()).isEqualTo(user);
     }

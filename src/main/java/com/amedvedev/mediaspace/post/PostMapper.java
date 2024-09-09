@@ -26,7 +26,7 @@ public abstract class PostMapper {
 
     @Mapping(source = "user.username", target = "username")
     @Mapping(source = "postMediaList", target = "postMediaList", qualifiedByName = "mapPostMediaList")
-    @Mapping(target = "likes", expression = "java(post.getLikedByUsers().size())")
+    @Mapping(target = "likes", expression = "java(post.getLikes().size())")
     @Mapping(target = "commentsCount", expression = "java(post.getComments().size())")
     public abstract ViewPostResponse toViewPostResponse(Post post);
 

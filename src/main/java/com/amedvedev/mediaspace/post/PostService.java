@@ -10,6 +10,8 @@ import com.amedvedev.mediaspace.post.comment.exception.CommentNotFoundException;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
 import com.amedvedev.mediaspace.post.exception.PostNotFoundException;
+import com.amedvedev.mediaspace.post.like.Like;
+import com.amedvedev.mediaspace.post.like.LikeId;
 import com.amedvedev.mediaspace.user.UserRepository;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -111,7 +113,7 @@ public class PostService {
                 SecurityContextHolder.getContext().getAuthentication().getName()
         ).orElseThrow(() -> new UsernameNotFoundException("Authentication object is invalid or does not contain a username"));
 
-        post.getLikedByUsers().add(user);
+        post.getLikes().add(Like.builder().id(new LikeId(user.getId(), postId)).post(post).user(user).build());
 
         postRepository.save(post);
     }

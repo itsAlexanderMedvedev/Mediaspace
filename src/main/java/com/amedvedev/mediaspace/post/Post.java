@@ -2,10 +2,12 @@ package com.amedvedev.mediaspace.post;
 
 import com.amedvedev.mediaspace.media.postmedia.PostMedia;
 import com.amedvedev.mediaspace.post.comment.Comment;
+import com.amedvedev.mediaspace.post.like.Like;
 import com.amedvedev.mediaspace.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -21,6 +23,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "post")
+@SQLRestriction(value = "is_deleted<>'TRUE'")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Post {
 
@@ -54,13 +57,8 @@ public class Post {
 
     // TODO: RETHINK THAT
     @Builder.Default
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    @JoinTable(
-            name = "_like",
-            joinColumns = @JoinColumn(name = "post_id"),
-            inverseJoinColumns = @JoinColumn(name = "_user_id")
-    )
-    private Set<User> likedByUsers = new HashSet<>();
+    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Like> likes = new HashSet<>();
 
     @Builder.Default
     @OrderBy("createdAt DESC")

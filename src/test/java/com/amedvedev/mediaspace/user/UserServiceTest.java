@@ -48,12 +48,14 @@ public class UserServiceTest {
         // Given
         String oldUsername = "oldUser";
         String newUsername = "newUser";
+
         UpdateUserRequest updateUserRequest = new UpdateUserRequest(newUsername, "password");
+
         User existingUser = new User();
         existingUser.setUsername(oldUsername);
 
         when(userRepository.findByUsernameIgnoreCase(oldUsername)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByUsernameIgnoreCase(newUsername)).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(newUsername)).thenReturn(Optional.empty());
 
         // When
         userService.updateUser(oldUsername, updateUserRequest);

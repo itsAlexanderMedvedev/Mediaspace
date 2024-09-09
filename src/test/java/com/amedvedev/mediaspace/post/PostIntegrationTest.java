@@ -13,6 +13,8 @@ import com.amedvedev.mediaspace.post.comment.dto.CommentDto;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
+import com.amedvedev.mediaspace.post.like.Like;
+import com.amedvedev.mediaspace.post.like.LikeId;
 import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserRepository;
@@ -349,8 +351,13 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         var likedPost = postRepository.findById(post.getId()).orElseThrow();
-        assertThat(likedPost.getLikedByUsers().size()).isEqualTo(1);
-        assertThat(likedPost.getLikedByUsers()).contains(user);
+        var expectedLike = Like.builder()
+                .id(new LikeId(user.getId(), post.getId()))
+                .user(user)
+                .post(likedPost)
+                .build();
+        assertThat(likedPost.getLikes().size()).isEqualTo(1);
+        assertThat(likedPost.getLikes()).contains(expectedLike);
     }
 
     @Test

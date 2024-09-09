@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.stream.Stream;
 
@@ -25,6 +26,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
     @LocalServerPort
     private Integer port;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private UserRepository userRepository;
@@ -41,7 +45,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = "/api/users";
 
-        userRepository.deleteAll();
+        jdbcTemplate.execute("DELETE FROM _user");
 
         user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);
@@ -198,6 +202,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .patch("/{username}", user.getUsername())
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("Username is already taken"));
     }

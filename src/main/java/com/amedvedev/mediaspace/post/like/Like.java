@@ -4,8 +4,10 @@ import com.amedvedev.mediaspace.post.Post;
 import com.amedvedev.mediaspace.user.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -16,9 +18,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "_like")
+@SQLRestriction(value = "is_deleted<>'TRUE'")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Like {
 
     @EmbeddedId
+    @EqualsAndHashCode.Include
     private LikeId id;
 
     @ManyToOne
@@ -31,6 +36,7 @@ public class Like {
     @JoinColumn(name = "post_id", insertable = false, updatable = false)
     private Post post;
 
+    @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

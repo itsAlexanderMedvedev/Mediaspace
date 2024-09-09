@@ -63,7 +63,7 @@ class AuthenticationServiceTest {
         var request = new RegisterRequest("username", "password");
 
 
-        Mockito.when(userService.findByUsernameIgnoreCase(request.getUsername()))
+        Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
                 .thenReturn(Optional.empty());
         Mockito.when(passwordEncoder.encode(request.getPassword()))
                 .thenReturn("encoded-password");
@@ -82,7 +82,7 @@ class AuthenticationServiceTest {
         var request = new RegisterRequest("username", "password");
 
 
-        Mockito.when(userService.findByUsernameIgnoreCase(request.getUsername()))
+        Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
                 .thenReturn(Optional.of(new User()));
 
 
@@ -111,7 +111,7 @@ class AuthenticationServiceTest {
 
         Mockito.when(authenticationManager.authenticate(Mockito.any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken("username", "password"));
-        Mockito.when(userService.findByUsernameIgnoreCase(request.getUsername()))
+        Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
                 .thenReturn(
                         Optional.of(
                                 User.builder()

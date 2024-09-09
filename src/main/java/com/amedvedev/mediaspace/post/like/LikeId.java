@@ -8,10 +8,10 @@ import java.io.Serializable;
 
 @Getter
 @Setter
+@Embeddable
+@EqualsAndHashCode
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode
-@Embeddable
 public class LikeId implements Serializable {
 
     @Column(name = "_user_id")

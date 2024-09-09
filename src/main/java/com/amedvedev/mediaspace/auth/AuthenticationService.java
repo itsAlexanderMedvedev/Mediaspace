@@ -25,7 +25,10 @@ public class AuthenticationService {
 
     public RegisterResponse register(RegisterRequest request) {
 
-        if (userService.findByUsernameIgnoreCase(request.getUsername()).isPresent()) {
+        if (userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()).isPresent()) {
+            System.out.println("HIT HERE");
+            System.out.println(request.getUsername());
+            System.out.println(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()));
             throw new UsernameAlreadyExistsException("This username is already taken");
         }
 
@@ -45,7 +48,7 @@ public class AuthenticationService {
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-        User user = userService.findByUsernameIgnoreCase(request.getUsername())
+        User user = userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         String token = jwtService.generateToken(user);

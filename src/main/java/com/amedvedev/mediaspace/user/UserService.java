@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.html.Option;
 import java.util.Optional;
 
 @Service
@@ -32,6 +33,7 @@ public class UserService {
 
         var updateUserResponse = new UpdateUserResponse();
         String newUsername = updateUserRequest.getUsername();
+
         if (newUsername != null) {
             if (newUsername.equals(user.getUsername())) {
                 throw new IllegalArgumentException("New username is the same as the old one");
@@ -46,6 +48,7 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(updateUserRequest.getPassword()));
             updateUserResponse.setUsername(user.getUsername());
         }
+
         userRepository.save(user);
         updateUserResponse.setMessage("User updated successfully, please log in again with new credentials");
 
@@ -53,11 +56,15 @@ public class UserService {
     }
 
     private boolean isUsernameFree(String username) {
-        return findByUsernameIgnoreCase(username).isEmpty();
+        return findByUsernameIgnoreCaseAndIncludeSoftDeleted(username).isEmpty();
     }
 
     public Optional<User> findByUsernameIgnoreCase(String username) {
         return userRepository.findByUsernameIgnoreCase(username);
+    }
+
+    public Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
+        return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username);
     }
 
     public void save(User user) {

@@ -23,7 +23,7 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsernameIgnoreCase(username)
+        return username -> userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
