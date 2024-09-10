@@ -194,6 +194,41 @@ public class PostController {
         postService.likePost(postId);
     }
 
+    @Operation(summary = "Unlike a post", description = "Unlikes a post.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "Post unliked successfully",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "Post not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @DeleteMapping("/{postId}/like")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void unlikePost(@PathVariable Long postId) {
+        postService.unlikePost(postId);
+    }
+
+    @Operation(summary = "Delete a post", description = "Deletes a post.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204", description = "Post deleted successfully"
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "Post not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePost(@PathVariable Long id) {

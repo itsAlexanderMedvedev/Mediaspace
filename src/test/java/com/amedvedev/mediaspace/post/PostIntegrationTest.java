@@ -389,7 +389,6 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .put("/{id}/like", post.getId())
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         var likedPost = postRepository.findById(post.getId()).orElseThrow();
@@ -413,6 +412,54 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Post not found"));
+    }
+
+    @Test
+    void shouldUnlikePost() {
+        var post = createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .put("/{id}/like", post.getId())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{id}/like", post.getId())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        var unlikedPost = postRepository.findById(post.getId()).orElseThrow();
+        assertThat(unlikedPost.getLikes()).isEmpty();
+    }
+
+    @Test
+    void shouldNotBeAbleToUnlikePostWithInvalidPostId() {
+        createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{id}/like", 2)
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("Post not found"));
+    }
+
+    @Test
+    void shouldNotBeAbleToUnlikePostIfNotLiked() {
+        var post = createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{id}/like", post.getId())
+                .then()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .body("reason", equalTo("Cannot unlike post that was not liked"));
     }
 
     @Test

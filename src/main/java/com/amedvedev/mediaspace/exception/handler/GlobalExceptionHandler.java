@@ -5,6 +5,7 @@ import com.amedvedev.mediaspace.exception.UnauthorizedDeletionException;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import com.amedvedev.mediaspace.post.comment.exception.UnauthorizedCommentDeletionException;
+import com.amedvedev.mediaspace.post.like.exception.PostNotLikedException;
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
 import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
@@ -63,7 +64,7 @@ public class GlobalExceptionHandler {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
-    @ExceptionHandler({UserUpdateException.class, UserIsNotDeletedException.class,})
+    @ExceptionHandler({UserUpdateException.class, UserIsNotDeletedException.class, PostNotLikedException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public GeneralErrorResponse handleBadRequestException(RuntimeException ex) {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());

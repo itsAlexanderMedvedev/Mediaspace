@@ -13,6 +13,7 @@ import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
 import com.amedvedev.mediaspace.post.exception.PostNotFoundException;
 import com.amedvedev.mediaspace.post.like.Like;
 import com.amedvedev.mediaspace.post.like.LikeId;
+import com.amedvedev.mediaspace.post.like.exception.PostNotLikedException;
 import com.amedvedev.mediaspace.user.UserRepository;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -132,6 +133,23 @@ public class PostService {
         }
 
         post.getComments().remove(comment);
+
+        postRepository.save(post);
+    }
+
+    public void unlikePost(Long postId) {
+        var post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("Post not found"));
+
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
+
+        var removed = post.getLikes().removeIf(like -> like.getUser().getId().equals(user.getId()));
+
+        if (!removed) {
+            throw new PostNotLikedException("Cannot unlike post that was not liked");
+        }
 
         postRepository.save(post);
     }
