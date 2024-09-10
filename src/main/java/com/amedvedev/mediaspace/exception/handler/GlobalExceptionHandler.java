@@ -5,6 +5,8 @@ import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import com.amedvedev.mediaspace.post.comment.exception.UnauthorizedCommentDeletionException;
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
+import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
+import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.DisabledException;
@@ -60,9 +62,10 @@ public class GlobalExceptionHandler {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler({UserUpdateException.class, UserIsNotDeletedException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public GeneralErrorResponse handleIllegalArgumentException(IllegalArgumentException ex) {
+    public GeneralErrorResponse handleBadRequestRuntimeException(RuntimeException ex) {
+        System.out.println("exception: " + ex.getMessage());
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 

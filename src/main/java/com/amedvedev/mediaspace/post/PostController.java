@@ -27,7 +27,7 @@ public class PostController {
 
     private final PostService postService;
 
-    @Operation(summary = "Create a new post. (max 30 per user)", description = "Creates a new post for a user.")
+    @Operation(summary = "Create a new post", description = "Creates a new post for a user.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Post created successfully",

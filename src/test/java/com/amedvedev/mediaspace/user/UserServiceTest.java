@@ -2,6 +2,7 @@ package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
+import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,7 +109,7 @@ public class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(updateUserRequest))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UserUpdateException.class)
                 .hasMessage("New username is the same as the old one");
 
         verify(userRepository, never()).save(any());
@@ -138,7 +139,7 @@ public class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(updateUserRequest))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UserUpdateException.class)
                 .hasMessage("Username is already taken");
 
         verify(userRepository, never()).save(any());

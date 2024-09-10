@@ -1,9 +1,12 @@
 package com.amedvedev.mediaspace.user;
 
+import com.amedvedev.mediaspace.auth.dto.RestoreRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
 import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
+import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
+import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,10 +32,10 @@ public class UserService {
 
         if (newUsername != null) {
             if (newUsername.equals(user.getUsername())) {
-                throw new IllegalArgumentException("New username is the same as the old one");
+                throw new UserUpdateException("New username is the same as the old one");
             }
             if (!isUsernameFree(newUsername)) {
-                throw new IllegalArgumentException("Username is already taken");
+                throw new UserUpdateException("Username is already taken");
             }
             user.setUsername(newUsername);
             updateUserResponse.setUsername(newUsername);
@@ -78,6 +81,19 @@ public class UserService {
         ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         user.setDeleted(true);
+        userRepository.save(user);
+    }
+
+    public void restoreUser(RestoreRequest request) {
+        var user = userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (user.isDeleted()) {
+            user.setDeleted(false);
+        } else {
+            throw new UserIsNotDeletedException("User is not deleted");
+        }
+
         userRepository.save(user);
     }
 }
