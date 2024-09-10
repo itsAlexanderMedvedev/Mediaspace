@@ -1,4 +1,4 @@
-package com.amedvedev.mediaspace.auth.dto;
+package com.amedvedev.mediaspace.user.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RestoreResponse {
+public class RestoreUserResponse {
 
     private String message;
 }

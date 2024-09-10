@@ -1,6 +1,6 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.auth.dto.RestoreRequest;
+import com.amedvedev.mediaspace.user.dto.RestoreUserRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
 import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
@@ -84,7 +84,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void restoreUser(RestoreRequest request) {
+    public void restoreUser(RestoreUserRequest request) {
         var user = userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -96,4 +96,5 @@ public class UserService {
 
         userRepository.save(user);
     }
+
 }

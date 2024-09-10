@@ -42,7 +42,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         securedPath = RestAssured.baseURI + ":" + port + "/api/users/me";
         deletePath = RestAssured.baseURI + ":" + port + "/api/users";
 
-        jdbcTemplate.execute("DELETE FROM _user; DELETE FROM post");
+        jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
     }
 
     private void registerUser(String username, String password) {

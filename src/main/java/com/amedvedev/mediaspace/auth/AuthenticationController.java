@@ -1,9 +1,11 @@
 package com.amedvedev.mediaspace.auth;
 
-import com.amedvedev.mediaspace.auth.dto.*;
+import com.amedvedev.mediaspace.auth.dto.LoginRequest;
+import com.amedvedev.mediaspace.auth.dto.LoginResponse;
+import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
+import com.amedvedev.mediaspace.auth.dto.RegisterResponse;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
-import com.amedvedev.mediaspace.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
-    private final UserService userService;
 
     @Operation(summary = "Register a new user", description = "Creates a new user account.")
     @ApiResponses(value = {
@@ -61,13 +62,6 @@ public class AuthenticationController {
     @ResponseStatus(HttpStatus.OK)
     public LoginResponse login(@RequestBody LoginRequest request) {
         return authenticationService.login(request);
-    }
-
-    @PutMapping("/restore")
-    @ResponseStatus(HttpStatus.OK)
-    public RestoreResponse restoreUser(@RequestBody RestoreRequest request) {
-        userService.restoreUser(request);
-        return new RestoreResponse("User restored successfully. Please login to continue.");
     }
 
 }

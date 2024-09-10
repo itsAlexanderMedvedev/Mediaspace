@@ -50,7 +50,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DisabledException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public GeneralErrorResponse handleDisabledException(DisabledException ex) {
-        System.out.println("--- HERE DisabledException Global ---");
         return new GeneralErrorResponse(
                 "Your account is deleted. If you want to restore it - use /api/users/restore endpoint.",
                 LocalDateTime.now());
@@ -64,20 +63,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({UserUpdateException.class, UserIsNotDeletedException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public GeneralErrorResponse handleBadRequestRuntimeException(RuntimeException ex) {
+    public GeneralErrorResponse handleBadRequestException(RuntimeException ex) {
         System.out.println("exception: " + ex.getMessage());
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({ElementNotFoundException.class, NoResourceFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public GeneralErrorResponse handleUserNotFoundException(Exception ex) {
+    public GeneralErrorResponse handleNotFoundException(Exception ex) {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({StoriesLimitReachedException.class, UnauthorizedCommentDeletionException.class})
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public GeneralErrorResponse handleStoriesLimitReachedException(StoriesLimitReachedException ex) {
+    public GeneralErrorResponse handleForbiddenOperationException(RuntimeException ex) {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 

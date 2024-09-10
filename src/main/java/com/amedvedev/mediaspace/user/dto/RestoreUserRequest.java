@@ -1,4 +1,4 @@
-package com.amedvedev.mediaspace.auth.dto;
+package com.amedvedev.mediaspace.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RestoreRequest {
+public class RestoreUserRequest {
 
     @Schema(description = "Username", example = "username")
     private String username;

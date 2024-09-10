@@ -1,5 +1,7 @@
 package com.amedvedev.mediaspace.user;
 
+import com.amedvedev.mediaspace.user.dto.RestoreUserRequest;
+import com.amedvedev.mediaspace.user.dto.RestoreUserResponse;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
@@ -67,6 +69,20 @@ public class UserController {
         return userService.updateUser(updateUserRequest);
     }
 
+    @Operation(summary = "Delete user", description = "Deletes the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204", description = "User deleted successfully"
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser() {
@@ -74,4 +90,25 @@ public class UserController {
     }
 
 
+    @Operation(summary = "Restore user", description = "Restores the user that was previously deleted.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "User restored successfully",
+                    content = @Content(schema = @Schema(implementation = RestoreUserResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @PutMapping("/restore")
+    @ResponseStatus(HttpStatus.OK)
+    public RestoreUserResponse restoreUser(@RequestBody RestoreUserRequest request) {
+        userService.restoreUser(request);
+        return new RestoreUserResponse("User restored successfully. Please login to continue.");
+    }
 }
