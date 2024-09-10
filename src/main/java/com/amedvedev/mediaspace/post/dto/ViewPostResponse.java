@@ -1,6 +1,7 @@
 package com.amedvedev.mediaspace.post.dto;
 
 import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,12 +16,27 @@ import java.util.List;
 @AllArgsConstructor
 public class ViewPostResponse {
 
-        private Long id;
-        private String username;
-        private String title;
-        private String description;
-        private List<ViewPostMediaResponse> postMediaList;
-        private int likes;
-        private int commentsCount;
-        private LocalDateTime createdAt;
+    @Schema(description = "The post ID", example = "1")
+    private Long id;
+
+    @Schema(description = "The post author's username", example = "user")
+    private String username;
+
+    @Schema(description = "The post title", example = "This is a post")
+    private String title;
+
+    @Schema(description = "The post description", example = "This is a post description")
+    private String description;
+
+    @Schema(description = "The post media list")
+    private List<ViewPostMediaResponse> postMediaList;
+
+    @Schema(description = "The post likes count", example = "50")
+    private int likes;
+
+    @Schema(description = "The post comments count", example = "5")
+    private int commentsCount;
+
+    @Schema(description = "The post creation date")
+    private LocalDateTime createdAt;
 }

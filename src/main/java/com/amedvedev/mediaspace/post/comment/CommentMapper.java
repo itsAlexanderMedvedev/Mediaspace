@@ -11,7 +11,7 @@ import java.util.List;
 public interface CommentMapper {
 
     @Mapping(source="user.username", target = "author")
-    @Mapping(target="comments", qualifiedByName = "commentsToDto")
+    @Mapping(target="nestedComments", qualifiedByName = "commentsToDto")
     @Mapping(source="createdAt", target = "writtenAt")
     CommentDto toCommentDto(Comment comment);
 

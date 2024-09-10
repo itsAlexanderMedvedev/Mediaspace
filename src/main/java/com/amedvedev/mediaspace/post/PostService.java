@@ -43,7 +43,7 @@ public class PostService {
 
         var postMediaList = IntStream.range(0, request.getMediaUrls().size())
                 .mapToObj(index -> {
-                    var url = request.getMediaUrls().get(index);
+                    var url = request.getMediaUrls().get(index).getUrl();
                     var media = Media.builder().url(url).build();
                     var mediaPostId = new PostMediaId(media.getId(), index + 1);
                     return new PostMedia(mediaPostId, media, post);

@@ -1,5 +1,7 @@
 package com.amedvedev.mediaspace.post.dto;
 
+import com.amedvedev.mediaspace.media.dto.CreateMediaRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,10 +15,12 @@ import java.util.List;
 @AllArgsConstructor
 public class CreatePostRequest {
 
-    // TODO: add open api docs
+    @Schema(description = "The title of the post", example = "This is a title")
     private String title;
+
+    @Schema(description = "The description of the post", example = "This is a description")
     private String description;
 
-    // TODO: validate media urls
-    private List<String> mediaUrls;
+    @Schema(description = "The list of media URLs")
+    private List<CreateMediaRequest> mediaUrls;
 }

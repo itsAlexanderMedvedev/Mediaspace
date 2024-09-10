@@ -14,7 +14,7 @@ import org.hibernate.validator.constraints.URL;
 @AllArgsConstructor
 public class CreateMediaRequest {
 
-    @URL
+    @URL(message = "Invalid URL")
     @Schema(description = "The URL of the media content", example = "https://www.your-resource.com/image.jpg")
     private String url;
 }

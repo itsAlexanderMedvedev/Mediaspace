@@ -3,9 +3,10 @@ package com.amedvedev.mediaspace.post;
 import com.amedvedev.mediaspace.auth.JwtService;
 import com.amedvedev.mediaspace.media.Media;
 import com.amedvedev.mediaspace.media.MediaRepository;
+import com.amedvedev.mediaspace.media.dto.CreateMediaRequest;
+import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
 import com.amedvedev.mediaspace.media.postmedia.PostMedia;
 import com.amedvedev.mediaspace.media.postmedia.PostMediaId;
-import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
 import com.amedvedev.mediaspace.media.postmedia.PostMediaRepository;
 import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
@@ -29,8 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -113,10 +112,14 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     private CreatePostRequest createPostRequest(String title, String description) {
+        var mediaUrls = List.of(
+                new CreateMediaRequest("https://example.com/image.jpg"),
+                new CreateMediaRequest("https://example.com/video.mp4"));
+
         return CreatePostRequest.builder()
                 .title(title)
                 .description(description)
-                .mediaUrls(List.of("https://example.com/image.jpg", "https://example.com/video.mp4"))
+                .mediaUrls(mediaUrls)
                 .build();
     }
 

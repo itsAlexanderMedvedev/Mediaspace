@@ -53,7 +53,7 @@ public class Comment {
 
     @Builder.Default
     @OneToMany(mappedBy = "parentComment")
-    private List<Comment> comments = new ArrayList<>();
+    private List<Comment> nestedComments = new ArrayList<>();
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)

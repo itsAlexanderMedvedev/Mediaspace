@@ -128,7 +128,7 @@ public class PostController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Comments found",
-                    content = @Content(schema = @Schema(implementation = ViewPostResponse.class))
+                    content = @Content(schema = @Schema(implementation = ViewPostCommentsResponse.class))
             ),
             @ApiResponse(
                     responseCode = "401", description = "Unauthorized",
