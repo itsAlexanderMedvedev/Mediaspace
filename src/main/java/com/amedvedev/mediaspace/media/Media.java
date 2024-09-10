@@ -1,22 +1,23 @@
 package com.amedvedev.mediaspace.media;
 
 import com.amedvedev.mediaspace.media.postmedia.PostMedia;
+import com.amedvedev.mediaspace.story.Story;
 import jakarta.persistence.*;
 import lombok.*;
 
+@Entity
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Entity
 @Table(name = "media")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Media {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "url", nullable = false, length = 4096)
@@ -25,5 +26,8 @@ public class Media {
     @OneToOne(mappedBy = "media")
     @JoinColumn(name = "media_id")
     private PostMedia postMedia;
+
+    @OneToOne(mappedBy = "media")
+    private Story story;
 
 }

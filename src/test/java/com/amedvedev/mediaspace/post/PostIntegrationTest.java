@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -164,7 +165,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
 
         var actualViewPostResponse = given()
                 .header("Authorization", "Bearer " + token)
-                .contentType("application/json")
+                .contentType(ContentType.JSON)
                 .body(createPostRequest)
                 .when()
                 .post()
@@ -255,7 +256,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .header("Authorization", "Bearer " + token)
-                .contentType("application/json")
+                .contentType(ContentType.JSON)
                 .body(addCommentRequest)
                 .when()
                 .post("/{postId}/comments", 1)
@@ -273,7 +274,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .header("Authorization", "Bearer " + token)
-                .contentType("application/json")
+                .contentType(ContentType.JSON)
                 .body(addCommentRequest)
                 .when()
                 .post("/{postId}/comments", 2)

@@ -31,7 +31,7 @@ public class PostService {
     private final PostMapper postMapper;
 
     public ViewPostResponse createPost(CreatePostRequest request) {
-         var user = userRepository.findByUsernameIgnoreCase(
+        var user = userRepository.findByUsernameIgnoreCase(
                 SecurityContextHolder.getContext().getAuthentication().getName()
         ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 

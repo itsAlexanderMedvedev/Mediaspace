@@ -8,6 +8,7 @@ import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
 import com.amedvedev.mediaspace.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,15 +22,16 @@ public class StoryService {
     private final StoryMapper storyMapper;
 
     public ViewStoryResponse createStory(CreateStoryRequest request) {
-        var user = userRepository.findByUsernameIgnoreCase(request.getUsername())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
 
         if (user.getStories().size() == 30) {
-            throw new StoriesLimitReachedException("User has reached the maximum number of stories");
+            throw new StoriesLimitReachedException("Maximum number of stories reached");
         }
 
         var media = Media.builder()
-                .url(request.getMedia().getUrl())
+                .url(request.getCreateMediaRequest().getUrl())
                 .build();
 
         var story = Story.builder()
@@ -56,6 +58,7 @@ public class StoryService {
         if (stories.isEmpty()) {
             throw new StoryNotFoundException(String.format("User %s has no stories", username));
         }
+
         return stories;
     }
 

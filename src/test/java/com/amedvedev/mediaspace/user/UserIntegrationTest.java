@@ -255,7 +255,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRestoreDeletedUser() {
+    void shouldRestoreDeletedUserWithoutAuthorization() {
         var restoreUserRequest = RestoreUserRequest.builder().username("user").password("password").build();
 
         given()
@@ -271,7 +271,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .put("/restore")
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.OK.value())
                 .body("message", equalTo("User restored successfully. Please login to continue."));
     }
@@ -283,7 +282,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .put("/restore")
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("Required request body is missing or malformed"));
     }
@@ -295,7 +293,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .patch("/restore")
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.METHOD_NOT_ALLOWED.value())
                 .body("reason", equalTo("Request method 'PATCH' is not supported"));
     }
@@ -310,7 +307,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .put("/restore")
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("User is not deleted"));
     }
@@ -332,7 +328,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .put("/restore")
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Bad credentials"));
     }
@@ -347,7 +342,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .put("/restore")
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("User not found"));
     }
