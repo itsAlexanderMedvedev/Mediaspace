@@ -1,6 +1,7 @@
 package com.amedvedev.mediaspace.exception.handler;
 
 import com.amedvedev.mediaspace.exception.ElementNotFoundException;
+import com.amedvedev.mediaspace.exception.UnauthorizedDeletionException;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import com.amedvedev.mediaspace.post.comment.exception.UnauthorizedCommentDeletionException;
@@ -80,7 +81,7 @@ public class GlobalExceptionHandler {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
-    @ExceptionHandler({StoriesLimitReachedException.class, UnauthorizedCommentDeletionException.class})
+    @ExceptionHandler({StoriesLimitReachedException.class, UnauthorizedDeletionException.class})
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public GeneralErrorResponse handleForbiddenOperationException(RuntimeException ex) {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());

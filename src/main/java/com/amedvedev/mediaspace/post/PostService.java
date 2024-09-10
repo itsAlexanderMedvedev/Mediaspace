@@ -128,7 +128,7 @@ public class PostService {
                 .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
 
         if (!comment.getUser().getUsername().equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
-            throw new UnauthorizedCommentDeletionException("You can only delete your own comments");
+            throw new UnauthorizedCommentDeletionException("Cannot delete comment of another user");
         }
 
         post.getComments().remove(comment);

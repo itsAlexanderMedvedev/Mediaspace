@@ -360,7 +360,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToDeleteCommentsOfAnotherUsers() {
+    void shouldNotBeAbleToDeleteCommentsOfOtherUsers() {
         var post = createPost("Title", "Hello, World!");
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
@@ -374,7 +374,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .delete("/{postId}/comments/{commentId}", 1, 1)
                 .then()
                 .statusCode(HttpStatus.FORBIDDEN.value())
-                .body("reason", equalTo("You can only delete your own comments"));
+                .body("reason", equalTo("Cannot delete comment of another user"));
     }
 
     @Test

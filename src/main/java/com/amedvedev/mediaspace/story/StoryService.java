@@ -2,6 +2,7 @@ package com.amedvedev.mediaspace.story;
 
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
+import com.amedvedev.mediaspace.story.exception.UnauthorizedStoryDeletionException;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.media.Media;
 import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
@@ -72,6 +73,10 @@ public class StoryService {
     public void deleteStory(Long id) {
         var story = storyRepository.findById(id)
                 .orElseThrow(() -> new StoryNotFoundException("Story not found"));
+
+        if (!story.getUser().getUsername().equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
+            throw new UnauthorizedStoryDeletionException("Cannot delete story of another user");
+        }
 
         storyRepository.delete(story);
     }

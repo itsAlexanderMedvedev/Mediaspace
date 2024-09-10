@@ -150,6 +150,16 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldSayNoStoriesFoundWhenUserHasNoStories() {
+        given()
+                .header("Authorization", "Bearer " + token)
+                .get("/user/" + user.getUsername())
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("User user has no stories"));
+    }
+
+    @Test
     void shouldNotGetStoriesOfUserWhenUserNotFound() {
         given()
                 .header("Authorization", "Bearer " + token)
@@ -169,7 +179,6 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
 
-
     @Test
     void shouldDeleteStory() {
         var story = createStory();
@@ -181,5 +190,40 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         assertThat(storyRepository.findById(story.getId())).isEmpty();
+    }
+
+    @Test
+    void shouldNotDeleteStoryWhenUnauthorized() {
+        var story = createStory();
+
+        given()
+                .delete("/{id}", story.getId())
+                .then()
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
+    }
+
+    @Test
+    void shouldNotDeleteStoryWhenStoryNotFound() {
+        given()
+                .header("Authorization", "Bearer " + token)
+                .delete("/{id}", 1)
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("Story not found"));
+    }
+
+    @Test
+    void shouldNotDeleteStoryOfOtherUsers() {
+        var story = createStory();
+
+        var otherUser = userRepository.save(User.builder().username("another-user").password("encoded-password").build());
+        var otherUserToken = jwtService.generateToken(otherUser);
+
+        given()
+                .header("Authorization", "Bearer " + otherUserToken)
+                .delete("/{id}", story.getId())
+                .then()
+                .statusCode(HttpStatus.FORBIDDEN.value())
+                .body("reason", equalTo("Cannot delete story of another user"));
     }
 }
