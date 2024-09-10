@@ -149,7 +149,27 @@ public class PostController {
         return postService.getComments(postId);
     }
 
-    public void deleteComment(Long postId, Long commentId) {
+    @Operation(summary = "Delete a comment", description = "Deletes a comment.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204", description = "Comment deleted successfully"
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "Post not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "Comment not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @DeleteMapping("/{postId}/comments/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteComment(@PathVariable Long postId, @PathVariable Long commentId) {
         postService.deleteComment(postId, commentId);
     }
 

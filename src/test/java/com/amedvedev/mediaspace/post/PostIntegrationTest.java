@@ -214,6 +214,38 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldReturnPostById() {
+        createPost("Title", "Hello, World!");
+
+        var expectedViewPostResponse = getViewPostResponseExpected("Title", "Hello, World!", 1L, new Long[]{1L, 2L});
+
+        var actualViewPostResponse = given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/{id}", 1)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract().jsonPath().getObject(".", ViewPostResponse.class);
+
+        actualViewPostResponse.setCreatedAt(null);
+
+        assertThat(expectedViewPostResponse).isEqualTo(actualViewPostResponse);
+    }
+
+    @Test
+    void shouldNotBeAbleToAccessPostByIdWithInvalidId() {
+        createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/{id}", 2)
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("Post not found"));
+    }
+
+    @Test
     void shouldBeAbleToAddCommentToPost() {
         createPost("Title", "Hello, World!");
 
@@ -279,57 +311,69 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldDeleteMediaAndCommentsWhenDeletingPost() {
+    void shouldBeAbleToDeleteComment() {
         var post = createPost("Title", "Hello, World!");
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
 
-        var mediaList = postMediaRepository.findAllByPostId(post.getId()).stream()
-                .map(PostMedia::getMedia)
-                .toList();
-
         given()
                 .header("Authorization", "Bearer " + token)
                 .when()
-                .delete("/{id}", post.getId())
+                .delete("/{postId}/comments/{commentId}", 1, 1)
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
-        assertThat(postRepository.findById(post.getId())).isEmpty();
-        assertThat(postMediaRepository.findAllByPostId(post.getId())).isEmpty();
-        assertThat(mediaRepository.findAllById(mediaList.stream().map(Media::getId).toList())).isEmpty();
+        var postWithDeletedComment = postRepository.findById(1L).orElseThrow();
+        assertThat(postWithDeletedComment.getComments().size()).isEqualTo(2);
+        assertThat(postWithDeletedComment.getComments()).doesNotContain(Comment.builder().id(1L).build());
     }
 
     @Test
-    void shouldReturnPostById() {
-        createPost("Title", "Hello, World!");
-
-        var expectedViewPostResponse = getViewPostResponseExpected("Title", "Hello, World!", 1L, new Long[]{1L, 2L});
-
-        var actualViewPostResponse = given()
-                .header("Authorization", "Bearer " + token)
-                .when()
-                .get("/{id}", 1)
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract().jsonPath().getObject(".", ViewPostResponse.class);
-
-        actualViewPostResponse.setCreatedAt(null);
-
-        assertThat(expectedViewPostResponse).isEqualTo(actualViewPostResponse);
-    }
-
-    @Test
-    void shouldNotBeAbleToAccessPostByIdWithInvalidId() {
-        createPost("Title", "Hello, World!");
+    void shouldNotBeAbleToDeleteCommentsOfPostWithInvalidPostId() {
+        var post = createPost("Title", "Hello, World!");
+        var comments = List.of("Comment1", "Comment2", "Comment3");
+        post = addCommentsToPost(post, comments);
 
         given()
                 .header("Authorization", "Bearer " + token)
                 .when()
-                .get("/{id}", 2)
+                .delete("/{postId}/comments/{commentId}", 2, 1)
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Post not found"));
+    }
+
+    @Test
+    void shouldNotBeAbleToDeleteCommentsOfPostWithInvalidCommentId() {
+        var post = createPost("Title", "Hello, World!");
+        var comments = List.of("Comment1", "Comment2", "Comment3");
+        post = addCommentsToPost(post, comments);
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{postId}/comments/{commentId}", 1, 4)
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("Comment not found"));
+    }
+
+    @Test
+    void shouldNotBeAbleToDeleteCommentsOfAnotherUsers() {
+        var post = createPost("Title", "Hello, World!");
+        var comments = List.of("Comment1", "Comment2", "Comment3");
+        post = addCommentsToPost(post, comments);
+
+        var otherUser = userRepository.save(User.builder().username("another-user").password("encoded-password").build());
+        var tokenOfOtherUser = jwtService.generateToken(otherUser);
+
+        given()
+                .header("Authorization", "Bearer " + tokenOfOtherUser)
+                .when()
+                .delete("/{postId}/comments/{commentId}", 1, 1)
+                .then()
+                .statusCode(HttpStatus.FORBIDDEN.value())
+                .body("reason", equalTo("You can only delete your own comments"));
     }
 
     @Test
@@ -355,6 +399,19 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldNotBeAbleToLikePostWithInvalidPostId() {
+        createPost("Title", "Hello, World!");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .put("/{id}/like", 2)
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("Post not found"));
+    }
+
+    @Test
     void shouldDeletePost() {
         createPost("Title", "Hello, World!");
 
@@ -364,5 +421,27 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .delete("/{id}", 1)
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
+    }
+
+    @Test
+    void shouldDeleteMediaAndCommentsWhenDeletingPost() {
+        var post = createPost("Title", "Hello, World!");
+        var comments = List.of("Comment1", "Comment2", "Comment3");
+        post = addCommentsToPost(post, comments);
+
+        var mediaList = postMediaRepository.findAllByPostId(post.getId()).stream()
+                .map(PostMedia::getMedia)
+                .toList();
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{id}", post.getId())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        assertThat(postRepository.findById(post.getId())).isEmpty();
+        assertThat(postMediaRepository.findAllByPostId(post.getId())).isEmpty();
+        assertThat(mediaRepository.findAllById(mediaList.stream().map(Media::getId).toList())).isEmpty();
     }
 }

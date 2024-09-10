@@ -8,6 +8,9 @@ import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -55,10 +58,6 @@ public class UserService {
         return findByUsernameIgnoreCaseAndIncludeSoftDeleted(username).isEmpty();
     }
 
-    public Optional<User> findByUsernameIgnoreCase(String username) {
-        return userRepository.findByUsernameIgnoreCase(username);
-    }
-
     public Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
         return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username);
     }
@@ -88,12 +87,15 @@ public class UserService {
         var user = userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        if (user.isDeleted()) {
-            user.setDeleted(false);
-        } else {
+        if (!user.isDeleted()) {
             throw new UserIsNotDeletedException("User is not deleted");
         }
 
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Bad credentials");
+        }
+
+        user.setDeleted(false);
         userRepository.save(user);
     }
 

@@ -30,7 +30,6 @@ public class FilterChainExceptionHandler extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws IOException {
-        System.out.println("--- HERE FilterChainExceptionHandler ---");
         try {
             filterChain.doFilter(request, response);
         } catch (JwtException | DisabledException ex) {

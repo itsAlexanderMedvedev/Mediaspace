@@ -46,8 +46,6 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void registerUser(String username, String password) {
-        System.out.println(userRepository.findAllIncludingSoftDeleted());
-
         given()
                 .contentType(ContentType.JSON)
                 .body(new RegisterRequest(username, password))
@@ -75,7 +73,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     void shouldRegisterUser() {
         registerUser("username", "password");
 
-        var user = userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted("username").orElseThrow();
+        var user = userRepository.findByUsernameIgnoreCase("username").orElseThrow();
         assertThat(userRepository.findById(user.getId())).isPresent();
         assertThat(userRepository.findById(user.getId()).orElseThrow()).isEqualTo(user);
     }

@@ -9,6 +9,7 @@ import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
@@ -61,11 +62,16 @@ public class GlobalExceptionHandler {
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 
-    @ExceptionHandler({UserUpdateException.class, UserIsNotDeletedException.class})
+    @ExceptionHandler({UserUpdateException.class, UserIsNotDeletedException.class,})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public GeneralErrorResponse handleBadRequestException(RuntimeException ex) {
-        System.out.println("exception: " + ex.getMessage());
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public GeneralErrorResponse handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        return new GeneralErrorResponse("Required request body is missing or malformed", LocalDateTime.now());
     }
 
     @ExceptionHandler({ElementNotFoundException.class, NoResourceFoundException.class})
@@ -89,6 +95,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public GeneralErrorResponse handleException(Exception ex) {
+        System.out.println(ex.getMessage() + " " + ex.getClass());
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 }

@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Story", description = "Endpoints for managing stories")
 @RestController
-@RequestMapping("/api/stories")
 @RequiredArgsConstructor
+@RequestMapping("/api/stories")
+@Tag(name = "Story", description = "Endpoints for managing stories")
 public class StoryController {
 
     private final StoryService storyService;
@@ -108,3 +108,4 @@ public class StoryController {
         storyService.deleteStory(id);
     }
 }
+
