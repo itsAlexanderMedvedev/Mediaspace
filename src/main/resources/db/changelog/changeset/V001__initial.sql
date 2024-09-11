@@ -17,6 +17,7 @@ CREATE TABLE _user (
 CREATE TABLE follow (
     follower_id bigint NOT NULL,
     followee_id bigint NOT NULL,
+    created_at  timestamp DEFAULT current_timestamp,
 
     CONSTRAINT pk_follow PRIMARY KEY (follower_id, followee_id),
     CONSTRAINT fk_follower FOREIGN KEY (follower_id) REFERENCES _user,

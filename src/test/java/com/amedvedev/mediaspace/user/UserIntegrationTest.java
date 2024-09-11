@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -53,6 +54,15 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         token = jwtService.generateToken(user);
     }
 
+    public User createUser(String username) {
+        return userRepository.save(
+                User.builder()
+                        .username(username)
+                        .password(passwordEncoder.encode("password"))
+                        .build()
+        );
+    }
+
     @Test
     void shouldNotAccessProtectedEndpointWithoutToken() {
         given()
@@ -83,6 +93,104 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("username", equalTo(user.getUsername()));
+    }
+
+    @Test
+    void shouldFollowUser() {
+        var userToFollow = createUser("user-to-follow");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .post("/{username}/follow", userToFollow.getUsername())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        var follower = userRepository.findByUsernameIgnoreCase(user.getUsername()).orElseThrow();
+        var followee = userRepository.findByUsernameIgnoreCase(userToFollow.getUsername()).orElseThrow();
+
+        assertThat(followee.getFollowers()).contains(follower);
+        assertThat(follower.getFollowing()).contains(followee);
+    }
+
+    @Test
+    void shouldNotFollowUserIfAlreadyFollowed() {
+        var userToFollow = createUser("user-to-follow");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .post("/{username}/follow", userToFollow.getUsername())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .post("/{username}/follow", userToFollow.getUsername())
+                .then()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .body("reason", equalTo("User is already followed"));
+    }
+
+    @Test
+    void shouldNotFollowNotExistingUser() {
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .post("/{username}/follow", "non-existing-username")
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("User not found"));
+    }
+
+    @Test
+    void shouldUnfollowUser() {
+        var userToUnfollow = createUser("user-to-unfollow");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .post("/{username}/follow", userToUnfollow.getUsername())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{username}/follow", userToUnfollow.getUsername())
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        var follower = userRepository.findByUsernameIgnoreCase(user.getUsername()).orElseThrow();
+        var followee = userRepository.findByUsernameIgnoreCase(userToUnfollow.getUsername()).orElseThrow();
+
+        assertThat(followee.getFollowers()).doesNotContain(follower);
+        assertThat(follower.getFollowing()).doesNotContain(followee);
+    }
+
+    @Test
+    void shouldNotUnfollowUserIfNotFollowed() {
+        var userToUnfollow = createUser("user-to-unfollow");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{username}/follow", userToUnfollow.getUsername())
+                .then()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .body("reason", equalTo("Cannot unfollow user that is not followed"));
+    }
+
+    @Test
+    void shouldNotUnfollowNotExistingUser() {
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .delete("/{username}/follow", "non-existing-username")
+                .then()
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .body("reason", equalTo("User not found"));
     }
 
     @Test

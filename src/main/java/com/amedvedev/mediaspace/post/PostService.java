@@ -7,7 +7,7 @@ import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.comment.exception.CommentNotFoundException;
-import com.amedvedev.mediaspace.post.comment.exception.UnauthorizedCommentDeletionException;
+import com.amedvedev.mediaspace.post.comment.exception.ForbiddenActionException;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
 import com.amedvedev.mediaspace.post.exception.PostNotFoundException;
@@ -129,7 +129,7 @@ public class PostService {
                 .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
 
         if (!comment.getUser().getUsername().equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
-            throw new UnauthorizedCommentDeletionException("Cannot delete comment of another user");
+            throw new ForbiddenActionException("Cannot delete comment of another user");
         }
 
         post.getComments().remove(comment);
