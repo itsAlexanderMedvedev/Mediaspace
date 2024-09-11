@@ -1,6 +1,8 @@
 package com.amedvedev.mediaspace.user.exception;
 
-public class UserUpdateException extends RuntimeException {
+import com.amedvedev.mediaspace.exception.BadRequestActionException;
+
+public class UserUpdateException extends BadRequestActionException {
   public UserUpdateException(String message) {
     super(message);
   }

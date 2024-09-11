@@ -5,12 +5,11 @@ import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
 import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
 import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
+import com.amedvedev.mediaspace.user.exception.FollowException;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,45 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+
+    public void followUser(String username) {
+        var follower = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
+
+        var followee = userRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (follower.getFollowing().contains(followee)) {
+            throw new FollowException("User is already followed");
+        }
+
+        follower.getFollowing().add(followee);
+        followee.getFollowers().add(follower);
+
+        var savedUser = userRepository.save(follower);
+
+        System.out.println("FROM THE SERVICE CLASS: " + savedUser.getFollowing());
+        System.out.println("FROM THE SERVICE CLASS: " + userRepository.findByUsernameIgnoreCase(username).orElseThrow().getFollowers());
+    }
+
+    public void unfollowUser(String username) {
+        var follower = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
+
+        var followee = userRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (!follower.getFollowing().contains(followee)) {
+            throw new FollowException("Cannot unfollow user that is not followed");
+        }
+
+        follower.getFollowing().remove(followee);
+        followee.getFollowers().remove(follower);
+
+        userRepository.save(follower);
+    }
 
     public UpdateUserResponse updateUser(UpdateUserRequest updateUserRequest) {
         var user = userRepository.findByUsernameIgnoreCase(
@@ -52,14 +90,6 @@ public class UserService {
         updateUserResponse.setMessage("User updated successfully, please log in again with new credentials");
 
         return updateUserResponse;
-    }
-
-    private boolean isUsernameFree(String username) {
-        return findByUsernameIgnoreCaseAndIncludeSoftDeleted(username).isEmpty();
-    }
-
-    public Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
-        return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username);
     }
 
     public void save(User user) {
@@ -99,4 +129,11 @@ public class UserService {
         userRepository.save(user);
     }
 
+    private boolean isUsernameFree(String username) {
+        return findByUsernameIgnoreCaseAndIncludeSoftDeleted(username).isEmpty();
+    }
+
+    public Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
+        return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username);
+    }
 }

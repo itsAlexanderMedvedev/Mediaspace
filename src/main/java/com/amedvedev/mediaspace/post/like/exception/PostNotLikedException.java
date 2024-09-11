@@ -1,6 +1,8 @@
 package com.amedvedev.mediaspace.post.like.exception;
 
-public class PostNotLikedException extends RuntimeException {
+import com.amedvedev.mediaspace.exception.BadRequestActionException;
+
+public class PostNotLikedException extends BadRequestActionException {
     public PostNotLikedException(String message) {
         super(message);
     }

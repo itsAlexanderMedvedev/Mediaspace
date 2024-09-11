@@ -18,13 +18,55 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "User", description = "Endpoints for managing users")
 @RestController
-@RequestMapping("/api/users")
 @RequiredArgsConstructor
+@RequestMapping("/api/users")
+@Tag(name = "User", description = "Endpoints for managing users")
 public class UserController {
 
     private final UserService userService;
+
+    @Operation(summary = "Follow a user", description = "Allows the authenticated user to follow another user.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "User followed successfully",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @PostMapping("{username}/follow")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void followUser(@PathVariable String username) {
+        userService.followUser(username);
+    }
+
+    @Operation(summary = "Unfollow a user", description = "Allows the authenticated user to unfollow another user.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "User unfollowed successfully",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @DeleteMapping("{username}/follow")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void unfollowUser(@PathVariable String username) {
+        userService.unfollowUser(username);
+    }
 
     @Operation(summary = "Get authenticated user", description = "Returns main info about the authenticated user.")
     @ApiResponses(value = {

@@ -64,7 +64,7 @@ public class User implements UserDetails {
     private List<Story> stories = new ArrayList<>();
 
     @Builder.Default
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinTable(
             name = "follow",
             joinColumns = @JoinColumn(name = "follower_id"),
@@ -73,7 +73,7 @@ public class User implements UserDetails {
     private List<User> followers = new ArrayList<>();
 
     @Builder.Default
-    @ManyToMany(mappedBy = "followers")
+    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "followers")
     private List<User> following = new ArrayList<>();
 
     @Builder.Default
