@@ -1,6 +1,8 @@
 package com.amedvedev.mediaspace.redis;
 
-public class RedisService {
+import org.springframework.stereotype.Service;
 
+@Service
+public class RedisService {
 
 }

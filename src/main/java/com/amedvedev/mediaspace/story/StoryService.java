@@ -1,5 +1,7 @@
 package com.amedvedev.mediaspace.story;
 
+import com.amedvedev.mediaspace.redis.RedisService;
+import com.amedvedev.mediaspace.story.dto.ViewStoriesFeedResponse;
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
 import com.amedvedev.mediaspace.story.exception.UnauthorizedStoryDeletionException;
@@ -21,6 +23,7 @@ public class StoryService {
     private final UserRepository userRepository;
     private final StoryRepository storyRepository;
     private final StoryMapper storyMapper;
+    private final RedisService redisService;
 
     public ViewStoryResponse createStory(CreateStoryRequest request) {
         var user = userRepository.findByUsernameIgnoreCase(
@@ -79,5 +82,28 @@ public class StoryService {
         }
 
         storyRepository.delete(story);
+    }
+
+    public List<ViewStoriesFeedResponse> getStoriesFeed() {
+        var user = userRepository.findByUsernameIgnoreCase(
+                SecurityContextHolder.getContext().getAuthentication().getName()
+        ).orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
+
+        List<ViewStoriesFeedResponse> stories = redisService.getCachedStoriesFeedForUser(user.getId());
+
+        if (stories.isEmpty()) {
+            stories = storyRepository.findStoriesFeed(user.getId()).stream()
+                    .map(story -> ViewStoriesFeedResponse.builder()
+                            .username(user.getUsername())
+                            .userPicture(user.getProfilePicture().getUrl())
+                            .storyId(story.getId())
+                            .build()
+                    )
+                    .toList();
+
+            redisService.cacheStoriesFeedForUser(user.getId(), stories);
+        }
+
+        return stories;
     }
 }
