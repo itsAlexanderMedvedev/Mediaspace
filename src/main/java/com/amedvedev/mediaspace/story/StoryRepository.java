@@ -11,6 +11,6 @@ public interface StoryRepository extends JpaRepository<Story, Long> {
 
     List<Story> findByUserId(Long id);
 
-    @Query("SELECT s FROM Story s WHERE s.user.id IN (SELECT f. FROM Fo f WHERE f.follower_id = :userId)")
+    @Query("SELECT s FROM Story s WHERE s.user.id IN (SELECT f.followee.id FROM Follow f WHERE f.follower = :userId)")
     List<Story> findStoriesFeed(@Param("userId") Long userId);
 }
