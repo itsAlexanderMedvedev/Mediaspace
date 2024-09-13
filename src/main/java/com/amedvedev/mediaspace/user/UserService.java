@@ -32,6 +32,10 @@ public class UserService {
         var followee = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+        if (follower.equals(followee)) {
+            throw new FollowException("Cannot follow yourself");
+        }
+
         if (follower.getFollowing().contains(followee)) {
             throw new FollowException("User is already followed");
         }
@@ -52,6 +56,10 @@ public class UserService {
 
         var followee = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (follower.equals(followee)) {
+            throw new FollowException("Cannot unfollow yourself");
+        }
 
         if (!follower.getFollowing().contains(followee)) {
             throw new FollowException("Cannot unfollow user that is not followed");

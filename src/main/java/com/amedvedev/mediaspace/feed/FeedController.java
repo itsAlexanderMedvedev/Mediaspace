@@ -28,9 +28,9 @@ public class FeedController {
         return storyService.getStoriesFeed();
     }
 
-    @GetMapping("/posts")
-    @ResponseStatus(HttpStatus.OK)
-    public List<ViewPostsFeedResponse> getPostsFeed() {
-        return postService.getStoriesFeed();
-    }
+//    @GetMapping("/posts")
+//    @ResponseStatus(HttpStatus.OK)
+//    public List<ViewPostsFeedResponse> getPostsFeed() {
+//        return postService.getStoriesFeed();
+//    }
 }

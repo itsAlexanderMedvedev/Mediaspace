@@ -11,11 +11,13 @@ import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
 import com.amedvedev.mediaspace.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StoryService {
@@ -92,10 +94,12 @@ public class StoryService {
         List<ViewStoriesFeedResponse> stories = redisService.getCachedStoriesFeedForUser(user.getId());
 
         if (stories.isEmpty()) {
+            log.info("No stories feed found in cache for user with id: {}", user.getId());
+            log.info("Retrieving stories feed from database for user with id: {}", user.getId());
             stories = storyRepository.findStoriesFeed(user.getId()).stream()
                     .map(story -> ViewStoriesFeedResponse.builder()
                             .username(user.getUsername())
-                            .userPicture(user.getProfilePicture().getUrl())
+                            .userPicture(user.getProfilePicture() == null ? null : user.getProfilePicture().getUrl())
                             .storyId(story.getId())
                             .build()
                     )
