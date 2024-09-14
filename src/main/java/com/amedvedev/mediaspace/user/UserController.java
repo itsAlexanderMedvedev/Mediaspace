@@ -26,6 +26,27 @@ public class UserController {
 
     private final UserService userService;
 
+    @Operation(summary = "Get user by username", description = "Returns the user by username.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "User found",
+                    content = @Content(schema = @Schema(implementation = ViewUserResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @GetMapping("/{username}")
+    @ResponseStatus(HttpStatus.OK)
+    public User findByUsernameIgnoreCase(@PathVariable String username) {
+        return userService.findByUsernameIgnoreCase(username);
+    }
+
     @Operation(summary = "Follow a user", description = "Allows the authenticated user to follow another user.")
     @ApiResponses(value = {
             @ApiResponse(
@@ -41,7 +62,7 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             )
     })
-    @PostMapping("{username}/follow")
+    @PostMapping("/{username}/follow")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void followUser(@PathVariable String username) {
         userService.followUser(username);
@@ -62,7 +83,7 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             )
     })
-    @DeleteMapping("{username}/follow")
+    @DeleteMapping("/{username}/follow")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unfollowUser(@PathVariable String username) {
         userService.unfollowUser(username);
