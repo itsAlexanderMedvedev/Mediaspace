@@ -34,7 +34,7 @@ public class RedisService {
             redisTemplate.opsForValue().set(key, storiesJson);
             log.debug("Cached stories feed for user with id: {}", id);
         } catch (JsonProcessingException e) {
-            log.error("Error serializing stories feed for user with id: {}", id);
+            log.error("Error serializing stories feed for user with id: {}", id, e);
         }
     }
 
@@ -70,7 +70,7 @@ public class RedisService {
             redisTemplate.opsForValue().set(key, userJson);
             log.debug("Cached user with id: {}", user.getId());
         } catch (JsonProcessingException e) {
-            log.error("Error serializing user with id: {}", user.getId());
+            log.error("Error serializing user with id: {}", user.getId(), e);
         }
     }
 

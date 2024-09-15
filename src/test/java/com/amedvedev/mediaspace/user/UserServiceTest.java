@@ -1,7 +1,9 @@
 package com.amedvedev.mediaspace.user;
 
+import com.amedvedev.mediaspace.redis.RedisService;
+import com.amedvedev.mediaspace.user.dto.UpdatePasswordRequest;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
-import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
+import com.amedvedev.mediaspace.user.dto.UpdateUsernameRequest;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,9 @@ public class UserServiceTest {
     @Mock
     private SecurityContextHolder securityContextHolder;
 
+    @Mock
+    private RedisService redisService;
+
     private MockitoSession mockitoSession;
 
     @BeforeEach
@@ -56,7 +61,7 @@ public class UserServiceTest {
         String oldUsername = "oldUser";
         String newUsername = "newUser";
 
-        UpdateUserRequest updateUserRequest = new UpdateUserRequest(newUsername, "password");
+        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest(newUsername);
 
         User existingUser = new User();
         existingUser.setUsername(oldUsername);
@@ -65,7 +70,7 @@ public class UserServiceTest {
         when(userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(newUsername)).thenReturn(Optional.empty());
 
         // When
-        userService.updateUser(updateUserRequest);
+        userService.updateUsername(updateUsernameRequest);
 
         // Then
         verify(userRepository).save(argThat(user -> user.getUsername().equals(newUsername)));
@@ -76,7 +81,7 @@ public class UserServiceTest {
         // Given
         String username = "user";
         String newPassword = "newPassword";
-        UpdateUserRequest updateUserRequest = new UpdateUserRequest(null, newPassword);
+        UpdatePasswordRequest updatePasswordRequest = new UpdatePasswordRequest(newPassword);
         User existingUser = new User();
         existingUser.setUsername(username);
 
@@ -90,7 +95,7 @@ public class UserServiceTest {
         when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.of(existingUser));
 
         // When
-        userService.updateUser(updateUserRequest);
+        userService.updatePassword(updatePasswordRequest);
 
         // Then
         verify(userRepository).save(argThat(user -> user.getPassword().equals("encodedPassword")));
@@ -101,14 +106,14 @@ public class UserServiceTest {
     public void updateUserNewUsernameSameAsOldThrowsException() {
         // Given
         String username = "user";
-        UpdateUserRequest updateUserRequest = new UpdateUserRequest(username, "password");
+        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest(username);
         User existingUser = new User();
         existingUser.setUsername(username);
 
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.of(existingUser));
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUser(updateUserRequest))
+        assertThatThrownBy(() -> userService.updateUsername(updateUsernameRequest))
                 .isInstanceOf(UserUpdateException.class)
                 .hasMessage("New username is the same as the old one");
 
@@ -120,7 +125,7 @@ public class UserServiceTest {
         // Given
         String oldUsername = "oldUsername";
         String newUsername = "newTakenUsername";
-        UpdateUserRequest updateUserRequest = new UpdateUserRequest(newUsername, "password");
+        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest(newUsername);
 
         User existingUser = new User();
         existingUser.setUsername(oldUsername);
@@ -138,7 +143,7 @@ public class UserServiceTest {
 
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUser(updateUserRequest))
+        assertThatThrownBy(() -> userService.updateUsername(updateUsernameRequest))
                 .isInstanceOf(UserUpdateException.class)
                 .hasMessage("Username is already taken");
 
@@ -148,7 +153,7 @@ public class UserServiceTest {
     @Test
     public void updateUserWhenUserDoesNotExistThrowsException() {
         // Given
-        UpdateUserRequest updateUserRequest = new UpdateUserRequest("newUsername", "password");
+        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest("newUsername");
 
         var authentication = mock(UsernamePasswordAuthenticationToken.class);
         var securityContext = mock(SecurityContext.class);
@@ -156,10 +161,11 @@ public class UserServiceTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getName()).thenReturn("");
 
+
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUser(updateUserRequest))
+        assertThatThrownBy(() -> userService.updateUsername(updateUsernameRequest))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("Authentication object is invalid or does not contain a username");
 

@@ -1,10 +1,7 @@
 package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.redis.RedisService;
-import com.amedvedev.mediaspace.user.dto.RestoreUserRequest;
-import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
-import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
-import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
+import com.amedvedev.mediaspace.user.dto.*;
 import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
 import com.amedvedev.mediaspace.user.exception.FollowException;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
@@ -28,23 +25,20 @@ public class UserService {
     private final UserMapper userMapper;
     private final RedisService redisService;
 
-    public User findByUsernameIgnoreCase(String username) {
+    public User findUserByUsername(String username) {
         return redisService.getCachedUser(username)
                 .orElseGet(() -> {
-                    log.debug("Retrieving user by username from: {}", username);
-
                     User user = userRepository.findByUsernameIgnoreCase(username)
                             .orElseThrow(() -> new UserNotFoundException("User not found"));
 
                     redisService.cacheUser(user);
-
                     return user;
                 });
-}
+    }
 
     public void followUser(String username) {
         var follower = getUserFromToken();
-        var followee = getUserByUsername(username);
+        var followee = findUserByUsername(username);
 
         if (follower.equals(followee)) {
             throw new FollowException("Cannot follow yourself");
@@ -64,7 +58,7 @@ public class UserService {
 
     public void unfollowUser(String username) {
         var follower = getUserFromToken();
-        var followee = getUserByUsername(username);
+        var followee = findUserByUsername(username);
 
         if (follower.equals(followee)) {
             throw new FollowException("Cannot unfollow yourself");
@@ -82,36 +76,35 @@ public class UserService {
         redisService.clearCachedUser(follower.getId());
     }
 
-    public UpdateUserResponse updateUser(UpdateUserRequest updateUserRequest) {
+    public UpdateUserResponse updateUsername(UpdateUsernameRequest updateUsernameRequest) {
         var user = getUserFromToken();
+        var newUsername = updateUsernameRequest.getUsername();
 
-        var updateUserResponse = new UpdateUserResponse();
-        String newUsername = updateUserRequest.getUsername();
-
-        if (newUsername != null) {
-            if (newUsername.equals(user.getUsername())) {
-                throw new UserUpdateException("New username is the same as the old one");
-            }
-            if (!isUsernameFree(newUsername)) {
-                throw new UserUpdateException("Username is already taken");
-            }
-            user.setUsername(newUsername);
-            updateUserResponse.setUsername(newUsername);
+        if (newUsername.equals(user.getUsername())) {
+            throw new UserUpdateException("New username is the same as the old one");
         }
-
-        if (updateUserRequest.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(updateUserRequest.getPassword()));
-            updateUserResponse.setUsername(user.getUsername());
+        if (!isUsernameFree(newUsername)) {
+            throw new UserUpdateException("Username is already taken");
         }
+        user.setUsername(newUsername);
 
         userRepository.save(user);
-        updateUserResponse.setMessage("User updated successfully, please log in again with new credentials");
 
-        if (user.getUsername().equals(newUsername)) {
-            redisService.clearCachedUser(user.getId());
-        }
+        return UpdateUserResponse.builder()
+                .message("Username updated successfully, please log in again with new credentials")
+                .build();
+    }
 
-        return updateUserResponse;
+    public UpdateUserResponse updatePassword(UpdatePasswordRequest updatePasswordRequest) {
+        var user = getUserFromToken();
+
+        user.setPassword(passwordEncoder.encode(updatePasswordRequest.getPassword()));
+
+        userRepository.save(user);
+
+        return UpdateUserResponse.builder()
+                .message("Password updated successfully, please log in again with new credentials")
+                .build();
     }
 
     public void save(User user) {
@@ -131,7 +124,8 @@ public class UserService {
     }
 
     public void restoreUser(RestoreUserRequest request) {
-        var user = getUserByUsername(request.getUsername());
+        var user = userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (!user.isDeleted()) {
             throw new UserIsNotDeletedException("User is not deleted");
@@ -150,17 +144,6 @@ public class UserService {
 
     public Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
         return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username);
-    }
-
-    private User getUserByUsername(String username) {
-        return redisService.getCachedUser(username)
-                .orElseGet(() -> {
-                    User user = userRepository.findByUsernameIgnoreCase(username)
-                        .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-                    redisService.cacheUser(user);
-                    return user;
-                });
     }
 
     private User getUserFromToken() {

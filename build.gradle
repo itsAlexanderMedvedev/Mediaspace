@@ -50,7 +50,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'redis.clients:jedis:5.0.2'
 
-
     compileOnly 'org.projectlombok:lombok'
 
     runtimeOnly 'org.postgresql:postgresql'
@@ -67,7 +66,6 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'com.redis:testcontainers-redis:2.2.2'
-
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 

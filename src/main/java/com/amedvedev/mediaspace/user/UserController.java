@@ -1,12 +1,8 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.user.dto.RestoreUserRequest;
-import com.amedvedev.mediaspace.user.dto.RestoreUserResponse;
+import com.amedvedev.mediaspace.user.dto.*;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
-import com.amedvedev.mediaspace.user.dto.UpdateUserRequest;
-import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
-import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,7 +40,7 @@ public class UserController {
     @GetMapping("/{username}")
     @ResponseStatus(HttpStatus.OK)
     public User findByUsernameIgnoreCase(@PathVariable String username) {
-        return userService.findByUsernameIgnoreCase(username);
+        return userService.findUserByUsername(username);
     }
 
     @Operation(summary = "Follow a user", description = "Allows the authenticated user to follow another user.")
@@ -106,8 +102,7 @@ public class UserController {
         return userService.me();
     }
 
-
-    @Operation(summary = "Update user information", description = "Updates the information of an existing user.")
+    @Operation(summary = "Update username", description = "Updates the username of the authenticated user.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "User updated successfully",
@@ -126,10 +121,35 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
             )
     })
-    @PatchMapping
+    @PatchMapping("/username")
     @ResponseStatus(HttpStatus.OK)
-    public UpdateUserResponse updateUserInfo(@Valid @RequestBody UpdateUserRequest updateUserRequest) {
-        return userService.updateUser(updateUserRequest);
+    public UpdateUserResponse updateUserInfo(@Valid @RequestBody UpdateUsernameRequest updateUsernameRequest) {
+        return userService.updateUsername(updateUsernameRequest);
+    }
+
+    @Operation(summary = "Update password", description = "Updates the password of the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "User updated successfully",
+                    content = @Content(schema = @Schema(implementation = UpdateUserResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400", description = "Invalid input",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @PatchMapping("/password")
+    @ResponseStatus(HttpStatus.OK)
+    public UpdateUserResponse updatePassword(@Valid @RequestBody UpdatePasswordRequest updatePasswordRequest) {
+        return userService.updatePassword(updatePasswordRequest);
     }
 
     @Operation(summary = "Delete user", description = "Deletes the authenticated user.")

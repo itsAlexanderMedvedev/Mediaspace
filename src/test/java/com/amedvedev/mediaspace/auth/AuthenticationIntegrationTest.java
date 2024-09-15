@@ -171,6 +171,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .get(securedPath)
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.OK.value())
                 .body("username", equalTo("username"));
     }

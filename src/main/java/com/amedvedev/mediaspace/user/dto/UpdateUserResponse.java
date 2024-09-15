@@ -11,7 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdateUserResponse {
 
-    public String username;
     public String message;
-
 }
