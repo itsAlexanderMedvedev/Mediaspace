@@ -2,9 +2,9 @@ package com.amedvedev.mediaspace.post;
 
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
-import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
+import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -48,7 +48,7 @@ public class PostController {
         return postService.createPost(request);
     }
 
-    @Operation(summary = "Get all posts for a user", description = "Returns all posts for a user.")
+    @Operation(summary = "Get info about posts of a user", description = "Returns concise info of all posts of a user.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Posts found",
@@ -69,7 +69,7 @@ public class PostController {
     })
     @GetMapping("/user/{username}")
     @ResponseStatus(HttpStatus.OK)
-    public List<ViewPostResponse> getPostsOfUser(@PathVariable String username) {
+    public List<UserProfilePostResponse> getPostsOfUser(@PathVariable String username) {
         return postService.getPostsOfUser(username);
     }
 
@@ -92,37 +92,37 @@ public class PostController {
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ViewPostResponse getPostById(@PathVariable Long id) {
-        return postService.getPostById(id);
+        return postService.getViewPostResponseById(id);
     }
 
-    @Operation(summary = "Add a comment to a post", description = "Adds a comment to a post.")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201", description = "Comment added successfully",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "400", description = "Invalid input",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "401", description = "Unauthorized",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "404", description = "Post not found",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "404", description = "User not found",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            )
-    })
-    @PostMapping("/{postId}/comments")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void addCommentToPost(@PathVariable Long postId, @RequestBody AddCommentRequest request) {
-        postService.addComment(postId, request);
-    }
+//    @Operation(summary = "Add a comment to a post", description = "Adds a comment to a post.")
+//    @ApiResponses(value = {
+//            @ApiResponse(
+//                    responseCode = "201", description = "Comment added successfully",
+//                    content = @Content
+//            ),
+//            @ApiResponse(
+//                    responseCode = "400", description = "Invalid input",
+//                    content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "401", description = "Unauthorized",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "404", description = "Post not found",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "404", description = "User not found",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            )
+//    })
+//    @PostMapping("/{postId}/comments")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public void addCommentToPost(@PathVariable Long postId, @RequestBody AddCommentRequest request) {
+//        postService.addComment(postId, request);
+//    }
 
     @Operation(summary = "Get comments of a post", description = "Returns comments of a post.")
     @ApiResponses(value = {
@@ -149,29 +149,29 @@ public class PostController {
         return postService.getComments(postId);
     }
 
-    @Operation(summary = "Delete a comment", description = "Deletes a comment.")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204", description = "Comment deleted successfully"
-            ),
-            @ApiResponse(
-                    responseCode = "401", description = "Unauthorized",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "404", description = "Post not found",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "404", description = "Comment not found",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            )
-    })
-    @DeleteMapping("/{postId}/comments/{commentId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteComment(@PathVariable Long postId, @PathVariable Long commentId) {
-        postService.deleteComment(postId, commentId);
-    }
+//    @Operation(summary = "Delete a comment", description = "Deletes a comment.")
+//    @ApiResponses(value = {
+//            @ApiResponse(
+//                    responseCode = "204", description = "Comment deleted successfully"
+//            ),
+//            @ApiResponse(
+//                    responseCode = "401", description = "Unauthorized",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "404", description = "Post not found",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "404", description = "Comment not found",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            )
+//    })
+//    @DeleteMapping("/{postId}/comments/{commentId}")
+//    @ResponseStatus(HttpStatus.NO_CONTENT)
+//    public void deleteComment(@PathVariable Long postId, @PathVariable Long commentId) {
+//        postService.deleteComment(postId, commentId);
+//    }
 
     @Operation(summary = "Like a post", description = "Likes a post.")
     @ApiResponses(value = {
@@ -232,7 +232,7 @@ public class PostController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePost(@PathVariable Long id) {
-        postService.deletePost(id);
+        postService.deletePostById(id);
     }
 }
 

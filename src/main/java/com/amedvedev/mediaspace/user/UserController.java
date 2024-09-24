@@ -26,7 +26,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "User found",
-                    content = @Content(schema = @Schema(implementation = ViewUserResponse.class))
+                    content = @Content(schema = @Schema(implementation = UserDto.class))
             ),
             @ApiResponse(
                     responseCode = "401", description = "Unauthorized",
@@ -39,8 +39,8 @@ public class UserController {
     })
     @GetMapping("/{username}")
     @ResponseStatus(HttpStatus.OK)
-    public User findByUsernameIgnoreCase(@PathVariable String username) {
-        return userService.findUserByUsername(username);
+    public UserDto findByUsernameIgnoreCase(@PathVariable String username) {
+        return userService.getUserDtoByUsername(username);
     }
 
     @Operation(summary = "Follow a user", description = "Allows the authenticated user to follow another user.")
@@ -89,7 +89,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Authenticated user data",
-                    content = @Content(schema = @Schema(implementation = ViewUserResponse.class))
+                    content = @Content(schema = @Schema(implementation = UserDto.class))
             ),
             @ApiResponse(
                     responseCode = "401", description = "Unauthorized",
@@ -98,7 +98,7 @@ public class UserController {
     })
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
-    public ViewUserResponse me() {
+    public UserDto me() {
         return userService.me();
     }
 
@@ -191,7 +191,6 @@ public class UserController {
     @PutMapping("/restore")
     @ResponseStatus(HttpStatus.OK)
     public RestoreUserResponse restoreUser(@RequestBody RestoreUserRequest request) {
-        userService.restoreUser(request);
-        return new RestoreUserResponse("User restored successfully. Please login to continue.");
+        return userService.restoreUser(request);
     }
 }

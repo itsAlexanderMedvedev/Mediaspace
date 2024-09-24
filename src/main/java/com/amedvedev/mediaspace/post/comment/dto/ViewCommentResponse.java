@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentDto {
+public class ViewCommentResponse {
 
     @Schema(description = "The comment ID", example = "1")
     private Long id;
@@ -20,12 +20,12 @@ public class CommentDto {
     @Schema(description = "The comment body", example = "This is a comment")
     private String body;
 
-    @Schema(description = "The comment author", example = "SomeUser")
+    @Schema(description = "The comment author", example = "username")
     private String author;
 
     @Schema(description = "The comment written at")
     private String writtenAt;
 
     @Schema(description = "The nested comments")
-    private List<CommentDto> nestedComments;
+    private List<ViewCommentResponse> nestedComments;
 }

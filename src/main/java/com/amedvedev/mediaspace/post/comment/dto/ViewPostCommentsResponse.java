@@ -18,5 +18,5 @@ public class ViewPostCommentsResponse {
     private Long postId;
 
     @Schema(description = "The post comments")
-    private List<CommentDto> comments;
+    private List<ViewCommentResponse> comments;
 }

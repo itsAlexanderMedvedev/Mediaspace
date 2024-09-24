@@ -1,11 +1,12 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.post.Post;
+import com.amedvedev.mediaspace.media.Media;
 import com.amedvedev.mediaspace.post.PostMapper;
+import com.amedvedev.mediaspace.post.PostService;
 import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.story.Story;
-import com.amedvedev.mediaspace.user.dto.ViewUserResponse;
-import org.hibernate.annotations.Array;
+import com.amedvedev.mediaspace.story.StoryService;
+import com.amedvedev.mediaspace.user.dto.UserDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -14,47 +15,76 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-
-// abstract class to allow usage of other mappers
 @Mapper(componentModel = "spring", unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public abstract class UserMapper {
 
-    private PostMapper postMapper;
+//    private PostMapper postMapper;
+//    private UserRepository userRepository;
+//    private PostService postService;
+//    private StoryService storyService;
 
     @Mapping(source = "profilePicture.url", target = "profilePictureUrl")
-    @Mapping(source = "posts", target = "posts", qualifiedByName = "getPosts")
-    @Mapping(source = "stories", target = "storiesIds", qualifiedByName = "storiesToIds")
-    @Mapping(source = "followers", target = "followersCount", qualifiedByName = "followersCount")
-    @Mapping(source = "following", target = "followingCount", qualifiedByName = "followingCount")
-    public abstract ViewUserResponse toViewUserDto(User user);
+//    @Mapping(source = "id", target = "posts", qualifiedByName = "getPosts")
+    @Mapping(source = "id", target = "storiesIds", qualifiedByName = "storiesToIds")
+//    @Mapping(source = "id", target = "followersCount", qualifiedByName = "followersCount")
+//    @Mapping(source = "id", target = "followingCount", qualifiedByName = "followingCount")
+    public abstract UserDto toUserDto(User user,
+                                      List<UserProfilePostResponse> posts,
+                                      List<Long> storiesIds,
+                                      long followersCount,
+                                      long followingCount);
+
+    @Mapping(source = "profilePictureUrl", target = "profilePicture", qualifiedByName = "getProfilePicture")
+    public abstract User toUser(UserDto userDto);
 
 
-    @Named("getPosts")
-    protected List<UserProfilePostResponse> getPosts(List<Post> posts){
-        return posts.stream()
-                .map(postMapper::toUserProfilePostResponse)
-                .toList();
+//    @Named("getPosts")
+//    protected List<UserProfilePostResponse> getPosts(Long id) {
+//        var posts = postService.getPostsByUserId(id);
+//        return posts.stream()
+//                .map(postMapper::toUserProfilePostResponse)
+//                .toList();
+//    }
+
+//    @Named("storiesToIds")
+//    protected List<Long> storiesToIds(Long id) {
+//        return storyService.getStoriesByUserId(id).stream()
+//                .map(Story::getId)
+//                .toList();
+//    }
+
+//    @Named("followersCount")
+//    protected long followersCount(Long id) {
+//        return userRepository.countFollowersByUserId(id);
+//    }
+
+//    @Named("followingCount")
+//    protected long followingCount(Long id) {
+//        return userRepository.countFollowingByUserId(id);
+//    }
+
+    @Named("getProfilePicture")
+    protected Media getProfilePicture(String profilePictureUrl) {
+        return profilePictureUrl == null ? null : Media.builder().url(profilePictureUrl).build();
     }
 
-    @Named("storiesToIds")
-    protected List<Long> storiesToIds(List<Story> stories){
-        return stories.stream()
-                .map(Story::getId)
-                .toList();
-    }
-
-    @Named("followersCount")
-    protected long followersCount(List<User> followers){
-        return followers.size();
-    }
-
-    @Named("followingCount")
-    protected long followingCount(List<User> following){
-        return following.size();
-    }
-
-    @Autowired
-    public void setPostMapper(PostMapper postMapper) {
-        this.postMapper = postMapper;
-    }
+//    @Autowired
+//    public void setPostMapper(PostMapper postMapper) {
+//        this.postMapper = postMapper;
+//    }
+//
+//    @Autowired
+//    public void setUserRepository(UserRepository userRepository) {
+//        this.userRepository = userRepository;
+//    }
+//
+//    @Autowired
+//    public void setPostService(PostService postService) {
+//        this.postService = postService;
+//    }
+//
+//    @Autowired
+//    public void setStoryService(StoryService storyService) {
+//        this.storyService = storyService;
+//    }
 }

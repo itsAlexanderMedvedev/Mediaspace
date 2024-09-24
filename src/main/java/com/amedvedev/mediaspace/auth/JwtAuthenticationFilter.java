@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -31,39 +33,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
-
+        String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer")) {
+            log.debug("Request without JWT");
             filterChain.doFilter(request, response);
             return;
         }
-        jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
 
+        var jwt = authHeader.substring(7);
+        var username = jwtService.extractUsername(jwt);
+
+        log.debug("JWT Received");
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails;
             try {
-                userDetails = userDetailsService.loadUserByUsername(username);
-                if (!userDetails.isEnabled()) {
-                    throw new DisabledException("Your account is deleted. If you want to restore it - use /api/users/restore endpoint.");
-                }
+                userDetails = getUserDetails(username);
             } catch (UsernameNotFoundException e) {
+                log.warn("Username not found: {}", username);
                 filterChain.doFilter(request, response);
                 return;
             }
             if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(token);
+                log.debug("Token is valid");
+                setSecurityContext(request, userDetails);
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private void setSecurityContext(HttpServletRequest request, UserDetails userDetails) {
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+        token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(token);
+    }
+
+    private UserDetails getUserDetails(String username) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        log.debug("User details loaded");
+        if (!userDetails.isEnabled()) {
+            log.warn("User is disabled");
+            throw new DisabledException("Your account is deleted. If you want to restore it - use /api/users/restore endpoint.");
+        }
+        return userDetails;
     }
 
     @Override

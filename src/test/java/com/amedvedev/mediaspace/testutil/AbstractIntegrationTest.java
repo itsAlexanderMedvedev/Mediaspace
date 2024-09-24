@@ -13,8 +13,10 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     protected JdbcTemplate jdbcTemplate;
 
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-            DockerImageName.parse("postgres:latest"));
+    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"))
+                .withUsername("postgres")
+                .withPassword("pass")
+                .withDatabaseName("mediaspace");
 
     static RedisContainer redis = new RedisContainer(
             RedisContainer.DEFAULT_IMAGE_NAME.withTag(RedisContainer.DEFAULT_TAG));

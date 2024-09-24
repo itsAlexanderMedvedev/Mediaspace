@@ -64,17 +64,17 @@ public class User implements UserDetails {
     private List<Story> stories = new ArrayList<>();
 
     @Builder.Default
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinTable(
             name = "follow",
-            joinColumns = @JoinColumn(name = "followee_id"),
-            inverseJoinColumns = @JoinColumn(name = "follower_id")
+            joinColumns = @JoinColumn(name = "follower_id"),
+            inverseJoinColumns = @JoinColumn(name = "followee_id")
     )
-    private List<User> followers = new ArrayList<>();
+    private List<User> following = new ArrayList<>();
 
     @Builder.Default
-    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "followers")
-    private List<User> following = new ArrayList<>();
+    @ManyToMany(mappedBy = "following")
+    private List<User> followers = new ArrayList<>();
 
     @Builder.Default
     @OrderBy("createdAt DESC")
@@ -118,5 +118,15 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return !isDeleted;
+    }
+
+    public void follow(User user) {
+        following.add(user);
+        user.followers.add(this);
+    }
+
+    public void unfollow(User user) {
+        following.remove(user);
+        user.followers.remove(this);
     }
 }

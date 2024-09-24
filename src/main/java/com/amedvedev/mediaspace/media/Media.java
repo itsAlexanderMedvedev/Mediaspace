@@ -20,7 +20,7 @@ public class Media {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "url", nullable = false, length = 4096)
+    @Column(name = "url", length = 4096)
     private String url;
 
     @OneToOne(mappedBy = "media")

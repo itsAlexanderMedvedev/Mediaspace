@@ -26,9 +26,6 @@ public class AuthenticationService {
     public RegisterResponse register(RegisterRequest request) {
 
         if (userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()).isPresent()) {
-            System.out.println("HIT HERE");
-            System.out.println(request.getUsername());
-            System.out.println(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()));
             throw new UsernameAlreadyExistsException("This username is already taken");
         }
 
@@ -36,6 +33,7 @@ public class AuthenticationService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
+
         userService.save(user);
 
         return new RegisterResponse("User registered successfully");
@@ -51,8 +49,7 @@ public class AuthenticationService {
         User user = userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        String token = jwtService.generateToken(user);
-
+        var token = jwtService.generateToken(user);
         return new LoginResponse(token);
     }
 }

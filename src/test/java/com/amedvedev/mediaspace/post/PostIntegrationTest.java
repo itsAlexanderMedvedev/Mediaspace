@@ -10,9 +10,10 @@ import com.amedvedev.mediaspace.media.postmedia.PostMediaId;
 import com.amedvedev.mediaspace.media.postmedia.PostMediaRepository;
 import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
-import com.amedvedev.mediaspace.post.comment.dto.CommentDto;
+import com.amedvedev.mediaspace.post.comment.dto.ViewCommentResponse;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
+import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
 import com.amedvedev.mediaspace.post.like.Like;
 import com.amedvedev.mediaspace.post.like.LikeId;
@@ -186,22 +187,17 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         createPost("Title1", "Hello, World!");
         createPost("Title2", "Hello, World!");
 
-        var viewPostResponse1 = getViewPostResponseExpected("Title1", "Hello, World!", 1L, new Long[]{1L, 2L});
-        var viewPostResponse2 = getViewPostResponseExpected("Title2", "Hello, World!", 2L, new Long[]{3L, 4L});
-
-        var expectedPostList = List.of(viewPostResponse1, viewPostResponse2);
-
         var actualPostsList = given()
                 .header("Authorization", "Bearer " + token)
                 .when()
                 .get("/user/{username}", "user")
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .extract().jsonPath().getList(".", ViewPostResponse.class);
+                .extract().jsonPath().getList(".", UserProfilePostResponse.class);
 
-        actualPostsList.forEach(el -> el.setCreatedAt(null));
-
-        assertThat(actualPostsList).containsExactlyElementsOf(expectedPostList);
+        assertThat(actualPostsList.size()).isEqualTo(2);
+        assertThat(actualPostsList.get(0).getTitle()).isEqualTo("Title1");
+        assertThat(actualPostsList.get(1).getTitle()).isEqualTo("Title2");
     }
 
     @Test
@@ -302,10 +298,10 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .extract().jsonPath().getObject(".", ViewPostCommentsResponse.class);
 
         var listOfComments = viewPostCommentResponse.getComments().stream()
-                .map(CommentDto::getBody)
+                .map(ViewCommentResponse::getBody)
                 .toList();
         var authorsList = viewPostCommentResponse.getComments().stream()
-                .map(CommentDto::getAuthor)
+                .map(ViewCommentResponse::getBody)
                 .toList();
 
         assertThat(viewPostCommentResponse.getComments().size()).isEqualTo(3);

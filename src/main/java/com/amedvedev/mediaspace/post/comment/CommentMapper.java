@@ -1,6 +1,6 @@
 package com.amedvedev.mediaspace.post.comment;
 
-import com.amedvedev.mediaspace.post.comment.dto.CommentDto;
+import com.amedvedev.mediaspace.post.comment.dto.ViewCommentResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -13,10 +13,10 @@ public interface CommentMapper {
     @Mapping(source="user.username", target = "author")
     @Mapping(target="nestedComments", qualifiedByName = "commentsToDto")
     @Mapping(source="createdAt", target = "writtenAt")
-    CommentDto toCommentDto(Comment comment);
+    ViewCommentResponse toViewCommentResponse(Comment comment);
 
     @Named("commentsToDto")
-    default List<CommentDto> commentsToDto(List<Comment> comments) {
-        return comments.stream().map(this::toCommentDto).toList();
+    default List<ViewCommentResponse> commentsToDto(List<Comment> comments) {
+        return comments.stream().map(this::toViewCommentResponse).toList();
     }
 }

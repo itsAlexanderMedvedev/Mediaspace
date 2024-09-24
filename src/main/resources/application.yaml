@@ -28,5 +28,9 @@ logging:
         org.springframework.web: DEBUG
         org.springframework.security: TRACE
         org.springframework.validation: DEBUG
+        org.hibernate: TRACE
         org.hibernate.validator: DEBUG
+        root: INFO
+        com.amedvedev.mediaspace: DEBUG
+        com.zaxxer.hikari: DEBUG
 

@@ -187,6 +187,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .delete(deletePath)
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()

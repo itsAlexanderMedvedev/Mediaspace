@@ -8,8 +8,10 @@ import com.amedvedev.mediaspace.user.dto.UpdatePasswordRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUsernameRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,6 +20,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.Time;
 
 import java.util.stream.Stream;
 
@@ -49,7 +55,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = "/api/users";
 
-        jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute("TRUNCATE post, media, post_media, _user RESTART IDENTITY CASCADE");
 
         user = userRepository.save(User.builder().username("user").password(passwordEncoder.encode("password")).build());
         token = jwtService.generateToken(user);
@@ -97,8 +103,11 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional(propagation = Propagation.SUPPORTS)
     void shouldFollowUser() {
         var userToFollow = createUser("user-to-follow");
+
+        System.out.println(userToFollow.getUsername());
 
         given()
                 .header("Authorization", "Bearer " + token)
@@ -109,6 +118,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
         var follower = userRepository.findByUsernameIgnoreCase(user.getUsername()).orElseThrow();
         var followee = userRepository.findByUsernameIgnoreCase(userToFollow.getUsername()).orElseThrow();
+
+        Hibernate.initialize(follower.getFollowing());
+        Hibernate.initialize(followee.getFollowers());
 
         assertThat(followee.getFollowers()).contains(follower);
         assertThat(follower.getFollowing()).contains(followee);
@@ -130,6 +142,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .post("/{username}/follow", userToFollow.getUsername())
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("User is already followed"));
     }
@@ -146,6 +159,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional(propagation = Propagation.SUPPORTS)
     void shouldUnfollowUser() {
         var userToUnfollow = createUser("user-to-unfollow");
 
@@ -161,10 +175,14 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .delete("/{username}/follow", userToUnfollow.getUsername())
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         var follower = userRepository.findByUsernameIgnoreCase(user.getUsername()).orElseThrow();
         var followee = userRepository.findByUsernameIgnoreCase(userToUnfollow.getUsername()).orElseThrow();
+
+        Hibernate.initialize(follower.getFollowing());
+        Hibernate.initialize(followee.getFollowers());
 
         assertThat(followee.getFollowers()).doesNotContain(follower);
         assertThat(follower.getFollowing()).doesNotContain(followee);
@@ -205,6 +223,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .patch("/username")
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.OK.value());
     }
 
@@ -241,7 +260,10 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldUpdateUserPassword() {
-        var updatePasswordRequest = UpdatePasswordRequest.builder().password("new-password").build();
+        var updatePasswordRequest = UpdatePasswordRequest.builder()
+                .oldPassword("password")
+                .password("new-password")
+                .build();
 
         given()
                 .contentType(ContentType.JSON)
@@ -250,6 +272,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .patch("/password")
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.OK.value());
     }
 
@@ -269,13 +292,13 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
     static Stream<Arguments> getArgumentsForShouldNotUpdatePasswordNotMatchingPattern() {
         return Stream.of(
-                Arguments.of(new UpdatePasswordRequest("new password"),
+                Arguments.of(new UpdatePasswordRequest("password", "new password"),
                         "Password cannot contain spaces"),
 
-                Arguments.of(new UpdatePasswordRequest("n"),
+                Arguments.of(new UpdatePasswordRequest("password", "n"),
                         "Password must be between 6 and 20 characters"),
 
-                Arguments.of(new UpdatePasswordRequest("n".repeat(21)),
+                Arguments.of(new UpdatePasswordRequest("password", "n".repeat(21)),
                         "Password must be between 6 and 20 characters")
         );
     }
@@ -349,15 +372,18 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .delete()
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()
                 .contentType(ContentType.JSON)
                 .body(loginRequest)
+                .log().all()
                 .when()
                 .post(RestAssured.baseURI + ":" + port + "/api/auth/login")
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
+                .log().all()
                 .body("reason", equalTo("Your account is deleted. If you want to restore it - use /api/users/restore endpoint."));
     }
 
@@ -370,6 +396,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .delete()
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()
@@ -428,6 +455,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .delete()
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()

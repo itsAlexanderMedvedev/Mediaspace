@@ -8,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.DisabledException;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FilterChainExceptionHandler extends OncePerRequestFilter {
@@ -33,35 +35,38 @@ public class FilterChainExceptionHandler extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, response);
         } catch (JwtException | DisabledException ex) {
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-            response.setContentType("application/json");
+            log.warn("Exception in filter chain: {}, with message: {}", ex.getClass().getSimpleName(), ex.getMessage());
+            var message = getErrorMessage(ex);
 
-            String message;
-            System.out.println(ex.getClass().getSimpleName());
-            if (ex instanceof MalformedJwtException) {
-                message = "Malformed JWT";
-            } else if (ex instanceof DisabledException) {
-                message = "Your account is deleted. If you want to restore it - use /api/users/restore endpoint.";
-            } else {
-                message = ex.getMessage();
-            }
-
-            String jsonResponse = objectMapper.writeValueAsString(
-                    new GeneralErrorResponse(message, LocalDateTime.now()));
-
-            PrintWriter writer = response.getWriter();
-            writer.write(jsonResponse);
-            writer.flush();
+            setResponseParams(response, "application/json", HttpStatus.UNAUTHORIZED);
+            writeErrorMessageToResponse(response, message);
         } catch (Exception ex) {
-            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            response.setContentType("application/json");
-
-            String jsonResponse = objectMapper.writeValueAsString(
-                    new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now()));
-
-            PrintWriter writer = response.getWriter();
-            writer.write(jsonResponse);
-            writer.flush();
+            setResponseParams(response, "application/json", HttpStatus.INTERNAL_SERVER_ERROR);
+            writeErrorMessageToResponse(response, ex.getMessage());
         }
+    }
+
+    private void writeErrorMessageToResponse(HttpServletResponse response, String message) throws IOException {
+        String jsonResponse = objectMapper.writeValueAsString(
+                new GeneralErrorResponse(message, LocalDateTime.now()));
+
+        PrintWriter writer = response.getWriter();
+        writer.write(jsonResponse);
+        writer.flush();
+    }
+
+    private String getErrorMessage(RuntimeException ex) {
+
+        return switch (ex) {
+            case MalformedJwtException ignored -> "Malformed JWT";
+            case DisabledException ignored ->
+                    "Your account is deleted. If you want to restore it - use /api/users/restore endpoint.";
+            default -> ex.getMessage();
+        };
+    }
+
+    private void setResponseParams(HttpServletResponse response, String contentType, HttpStatus unauthorized) {
+        response.setStatus(unauthorized.value());
+        response.setContentType(contentType);
     }
 }

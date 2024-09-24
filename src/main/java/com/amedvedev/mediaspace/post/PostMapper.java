@@ -5,7 +5,7 @@ import com.amedvedev.mediaspace.media.postmedia.PostMediaMapper;
 import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
 import com.amedvedev.mediaspace.post.comment.Comment;
 import com.amedvedev.mediaspace.post.comment.CommentMapper;
-import com.amedvedev.mediaspace.post.comment.dto.CommentDto;
+import com.amedvedev.mediaspace.post.comment.dto.ViewCommentResponse;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
@@ -45,9 +45,9 @@ public abstract class PostMapper {
     }
 
     @Named("mapComments")
-    protected List<CommentDto> mapComments(List<Comment> comments) {
+    protected List<ViewCommentResponse> mapComments(List<Comment> comments) {
         return comments.stream()
-                .map(commentMapper::toCommentDto)
+                .map(commentMapper::toViewCommentResponse)
 //                .sorted(Comparator.comparing(CommentDto::getWrittenAt).reversed())
                 .toList();
     }

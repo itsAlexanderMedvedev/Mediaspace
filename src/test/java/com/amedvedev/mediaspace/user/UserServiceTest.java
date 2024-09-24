@@ -2,6 +2,7 @@ package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.redis.RedisService;
 import com.amedvedev.mediaspace.user.dto.UpdatePasswordRequest;
+import com.amedvedev.mediaspace.user.dto.UserDto;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.UpdateUsernameRequest;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
@@ -38,7 +39,10 @@ public class UserServiceTest {
     private SecurityContextHolder securityContextHolder;
 
     @Mock
-    private RedisService redisService;
+    private UserRedisService userRedisService;
+
+    @Mock
+    private UserMapper userMapper;
 
     private MockitoSession mockitoSession;
 
@@ -68,6 +72,7 @@ public class UserServiceTest {
 
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.of(existingUser));
         when(userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(newUsername)).thenReturn(Optional.empty());
+        when(userMapper.toUserDto(existingUser)).thenReturn(UserDto.builder().username(oldUsername).build());
 
         // When
         userService.updateUsername(updateUsernameRequest);
@@ -81,7 +86,7 @@ public class UserServiceTest {
         // Given
         String username = "user";
         String newPassword = "newPassword";
-        UpdatePasswordRequest updatePasswordRequest = new UpdatePasswordRequest(newPassword);
+        UpdatePasswordRequest updatePasswordRequest = new UpdatePasswordRequest("oldPassword", newPassword);
         User existingUser = new User();
         existingUser.setUsername(username);
 
@@ -91,6 +96,7 @@ public class UserServiceTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getName()).thenReturn("user");
 
+        when(passwordEncoder.matches(any(), any())).thenReturn(true);
         when(passwordEncoder.encode(newPassword)).thenReturn("encodedPassword");
         when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.of(existingUser));
 

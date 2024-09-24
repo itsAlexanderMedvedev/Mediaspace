@@ -1,5 +1,6 @@
 package com.amedvedev.mediaspace.user;
 
+import com.amedvedev.mediaspace.post.Post;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -20,5 +21,18 @@ public interface UserRepository extends CrudRepository<User, Long> {
     @Query(value = "SELECT * FROM _user WHERE LOWER(username) = LOWER(:username)", nativeQuery = true)
     Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(@Param("username") String username);
 
+    @Query("SELECT u.followers FROM User u WHERE u.id = :userId")
+    List<User> findFollowersByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT u.following FROM User u WHERE u.id = :userId")
+    List<User> findFollowingByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(f) FROM User u JOIN u.followers f WHERE u.id = :userId")
+    long countFollowersByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(f) FROM User u JOIN u.following f WHERE u.id = :userId")
+    long countFollowingByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT f.id FROM User u JOIN u.following f WHERE u.id = :userId")
+    List<Long> findFollowingIdsByUserId(@Param("userId") Long userId);
 }

@@ -14,6 +14,7 @@ import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -24,7 +25,6 @@ public class RedisService {
     private final RedisTemplate<String, String> redisTemplate;
 
     private static final String STORIES_FEED_KEY_PREFIX = "stories_feed:";
-    private static final String USER_KEY_PREFIX = "user:";
 
     public void cacheStoriesFeedForUser(Long id, List<ViewStoriesFeedResponse> stories) {
         log.debug("Caching stories feed for user with id: {}", id);
@@ -60,41 +60,5 @@ public class RedisService {
         String key = STORIES_FEED_KEY_PREFIX + userId;
         redisTemplate.delete(key);
         log.debug("Cleared cached stories feed for user with id: {}", userId);
-    }
-
-    public void cacheUser(User user) {
-        log.debug("Caching user with id: {}", user.getId());
-        String key = USER_KEY_PREFIX + user.getId();
-        try {
-            String userJson = objectMapper.writeValueAsString(user);
-            redisTemplate.opsForValue().set(key, userJson);
-            log.debug("Cached user with id: {}", user.getId());
-        } catch (JsonProcessingException e) {
-            log.error("Error serializing user with id: {}", user.getId(), e);
-        }
-    }
-
-    public Optional<User> getCachedUser(String username) {
-        log.debug("Retrieving user from cache with id: {}", username);
-
-        String key = USER_KEY_PREFIX + username;
-        String userJson = redisTemplate.opsForValue().get(key);
-
-        if (userJson != null) {
-            try {
-                return Optional.of(objectMapper.readValue(userJson, User.class));
-            } catch (JsonProcessingException e) {
-                log.error("Error deserializing user from cache with username: {}", username, e);
-                return Optional.empty();
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    public void clearCachedUser(Long id) {
-        String key = USER_KEY_PREFIX + id;
-        redisTemplate.delete(key);
-        log.debug("Cleared cached user data for user with id: {}", id);
     }
 }

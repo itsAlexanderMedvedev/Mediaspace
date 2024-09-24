@@ -55,17 +55,36 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostMedia> postMediaList = new ArrayList<>();
 
-    // TODO: RETHINK THAT
     @Builder.Default
-    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Like> likes = new HashSet<>();
 
     @Builder.Default
     @OrderBy("createdAt DESC")
-    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
+
+    public void addComment(Comment comment) {
+        comments.add(comment);
+        comment.setPost(this);
+    }
+
+    public void removeComment(Comment comment) {
+        comments.remove(comment);
+        comment.setPost(null);
+    }
+
+    public void addLike(Like like) {
+        likes.add(like);
+        like.setPost(this);
+    }
+
+    public void removeLike(Like like) {
+        likes.remove(like);
+        like.setPost(null);
+    }
 }

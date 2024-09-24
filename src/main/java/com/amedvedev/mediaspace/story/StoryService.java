@@ -68,6 +68,10 @@ public class StoryService {
         return stories;
     }
 
+    public List<Story> getStoriesByUserId(Long userId) {
+        return storyRepository.findByUserId(userId);
+    }
+
     public ViewStoryResponse getStoryById(Long id) {
         var story = storyRepository.findById(id)
                 .orElseThrow(() -> new StoryNotFoundException("Story not found"));

@@ -5,10 +5,6 @@ import com.amedvedev.mediaspace.exception.ElementNotFoundException;
 import com.amedvedev.mediaspace.exception.ForbiddenActionException;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
-import com.amedvedev.mediaspace.post.like.exception.PostNotLikedException;
-import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
-import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
-import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -35,13 +31,17 @@ public class GlobalExceptionHandler {
     public ValidationErrorResponse handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new LinkedHashMap<>();
 
+        extractErrorsFromException(ex, errors);
+
+        return new ValidationErrorResponse(errors, LocalDateTime.now());
+    }
+
+    private void extractErrorsFromException(MethodArgumentNotValidException ex, Map<String, String> errors) {
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-
-        return new ValidationErrorResponse(errors, LocalDateTime.now());
     }
 
     @ExceptionHandler(UsernameAlreadyExistsException.class)
