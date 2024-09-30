@@ -27,7 +27,7 @@ public class PostController {
 
     private final PostService postService;
 
-    @Operation(summary = "Create a new post", description = "Creates a new post for a user.")
+    @Operation(summary = "Create a new post")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Post created successfully",
@@ -48,7 +48,7 @@ public class PostController {
         return postService.createPost(request);
     }
 
-    @Operation(summary = "Get info about posts of a user", description = "Returns concise info of all posts of a user.")
+    @Operation(summary = "Get info about posts of a user")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Posts found",
@@ -74,7 +74,7 @@ public class PostController {
     }
 
 
-    @Operation(summary = "Get a post by ID", description = "Returns a post by its ID.")
+    @Operation(summary = "Get a post by ID")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Post found",
@@ -124,30 +124,30 @@ public class PostController {
 //        postService.addComment(postId, request);
 //    }
 
-    @Operation(summary = "Get comments of a post", description = "Returns comments of a post.")
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200", description = "Comments found",
-                    content = @Content(schema = @Schema(implementation = ViewPostCommentsResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "401", description = "Unauthorized",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "404", description = "Post not found",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "404", description = "Comments not found",
-                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
-            )
-    })
-    @GetMapping("/{postId}/comments")
-    @ResponseStatus(HttpStatus.OK)
-    public ViewPostCommentsResponse getCommentsOfPost(@PathVariable Long postId) {
-        return postService.getComments(postId);
-    }
+//    @Operation(summary = "Get comments of a post", description = "Returns comments of a post.")
+//    @ApiResponses(value = {
+//            @ApiResponse(
+//                    responseCode = "200", description = "Comments found",
+//                    content = @Content(schema = @Schema(implementation = ViewPostCommentsResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "401", description = "Unauthorized",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "404", description = "Post not found",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            ),
+//            @ApiResponse(
+//                    responseCode = "404", description = "Comments not found",
+//                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+//            )
+//    })
+//    @GetMapping("/{postId}/comments")
+//    @ResponseStatus(HttpStatus.OK)
+//    public ViewPostCommentsResponse getCommentsOfPost(@PathVariable Long postId) {
+//        return postService.getComments(postId);
+//    }
 
 //    @Operation(summary = "Delete a comment", description = "Deletes a comment.")
 //    @ApiResponses(value = {
@@ -173,7 +173,7 @@ public class PostController {
 //        postService.deleteComment(postId, commentId);
 //    }
 
-    @Operation(summary = "Like a post", description = "Likes a post.")
+    @Operation(summary = "Like a post")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Post liked successfully",
@@ -194,7 +194,7 @@ public class PostController {
         postService.likePost(postId);
     }
 
-    @Operation(summary = "Unlike a post", description = "Unlikes a post.")
+    @Operation(summary = "Unlike a post")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Post unliked successfully",
@@ -215,7 +215,7 @@ public class PostController {
         postService.unlikePost(postId);
     }
 
-    @Operation(summary = "Delete a post", description = "Deletes a post.")
+    @Operation(summary = "Delete a post")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "204", description = "Post deleted successfully"

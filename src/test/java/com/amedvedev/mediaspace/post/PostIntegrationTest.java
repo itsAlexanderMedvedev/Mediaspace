@@ -31,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -149,7 +151,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToCreatePostWithoutAuthorization() {
+    void shouldNotCreatePostWithoutAuthorization() {
         given()
                 .when()
                 .post()
@@ -201,7 +203,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToAccessPostsOfUserWithInvalidUsername() {
+    void shouldNotAccessPostsOfUserWithInvalidUsername() {
         createPost("Title1", "Hello, World!");
 
         given()
@@ -233,7 +235,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToAccessPostByIdWithInvalidId() {
+    void shouldNotAccessPostByIdWithInvalidId() {
         createPost("Title", "Hello, World!");
 
         given()
@@ -246,7 +248,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldBeAbleToAddCommentToPost() {
+    void shouldAddCommentToPost() {
         createPost("Title", "Hello, World!");
 
         var addCommentRequest = AddCommentRequest.builder()
@@ -264,7 +266,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToAddCommentToPostWithInvalidPostId() {
+    void shouldNotAddCommentToPostWithInvalidPostId() {
         createPost("Title", "Hello, World!");
 
         var addCommentRequest = AddCommentRequest.builder()
@@ -283,7 +285,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldBeAbleToViewComments() {
+    void shouldViewComments() {
         var post = createPost("Title", "Hello, World!");
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
@@ -294,7 +296,6 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .get("/{postId}/comments", 1)
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .log().all()
                 .extract().jsonPath().getObject(".", ViewPostCommentsResponse.class);
 
         var listOfComments = viewPostCommentResponse.getComments().stream()
@@ -311,7 +312,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldBeAbleToDeleteComment() {
+    void shouldDeleteComment() {
         var post = createPost("Title", "Hello, World!");
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
@@ -329,7 +330,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToDeleteCommentsOfPostWithInvalidPostId() {
+    void shouldNotDeleteCommentsOfPostWithInvalidPostId() {
         var post = createPost("Title", "Hello, World!");
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
@@ -344,7 +345,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToDeleteCommentsOfPostWithInvalidCommentId() {
+    void shouldNotDeleteCommentsOfPostWithInvalidCommentId() {
         var post = createPost("Title", "Hello, World!");
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
@@ -359,7 +360,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToDeleteCommentsOfOtherUsers() {
+    void shouldNotDeleteCommentsOfOtherUsers() {
         var post = createPost("Title", "Hello, World!");
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
@@ -377,6 +378,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional(propagation = Propagation.SUPPORTS)
     void shouldLikePost() {
         var post = createPost("Title", "Hello, World!");
 
@@ -398,7 +400,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToLikePostWithInvalidPostId() {
+    void shouldNotLikePostWithInvalidPostId() {
         createPost("Title", "Hello, World!");
 
         given()
@@ -411,6 +413,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Transactional(propagation = Propagation.SUPPORTS)
     void shouldUnlikePost() {
         var post = createPost("Title", "Hello, World!");
 
@@ -429,11 +432,12 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         var unlikedPost = postRepository.findById(post.getId()).orElseThrow();
+
         assertThat(unlikedPost.getLikes()).isEmpty();
     }
 
     @Test
-    void shouldNotBeAbleToUnlikePostWithInvalidPostId() {
+    void shouldNotUnlikePostWithInvalidPostId() {
         createPost("Title", "Hello, World!");
 
         given()
@@ -446,7 +450,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotBeAbleToUnlikePostIfNotLiked() {
+    void shouldNotUnlikePostIfNotLiked() {
         var post = createPost("Title", "Hello, World!");
 
         given()

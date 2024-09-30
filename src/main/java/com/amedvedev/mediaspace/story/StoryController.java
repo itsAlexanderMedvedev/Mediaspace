@@ -25,7 +25,7 @@ public class StoryController {
 
     private final StoryService storyService;
 
-    @Operation(summary = "Create a new story. (max 30 per user)", description = "Creates a new story for a user.")
+    @Operation(summary = "Create a new story. (max 30 per user)")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Story created successfully",
@@ -46,7 +46,7 @@ public class StoryController {
         return storyService.createStory(request);
     }
 
-    @Operation(summary = "Get a story by ID", description = "Returns a story by its ID.")
+    @Operation(summary = "Get a story by ID")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Story found",
@@ -67,7 +67,7 @@ public class StoryController {
         return storyService.getStoryById(id);
     }
 
-    @Operation(summary = "Get all stories of a user", description = "Returns all stories of a user.")
+    @Operation(summary = "Get all stories of a user")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Stories found",
@@ -88,7 +88,7 @@ public class StoryController {
         return storyService.getStoriesOfUser(username);
     }
 
-    @Operation(summary = "Delete a story", description = "Deletes a story by its ID.")
+    @Operation(summary = "Delete a story")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "204", description = "Story deleted"

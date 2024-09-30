@@ -1,6 +1,5 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.user.dto.*;
 import com.amedvedev.mediaspace.user.exception.FollowException;
 import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
@@ -8,14 +7,12 @@ import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.mapstruct.Named;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -24,19 +21,9 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final UserRedisService userRedisService;
-
-    public UserDto getUserDtoByUsername(String username) {
-        return getUserDtoFromCacheOrDb(username);
-    }
-
-    // for modifying operations we need to fetch user from db
-    public User findUserByUsername(String username) {
-        return userRepository.findByUsernameIgnoreCase(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-    }
+    private final PasswordEncoder passwordEncoder;
 
     public User getCurrentUser() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -44,6 +31,21 @@ public class UserService {
 
         return userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
+    }
+
+    public UserDto getCurrentUserDto() {
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.debug("Attempting to current user from token with username: {}", username);
+        return getUserDtoFromCacheOrDb(username);
+    }
+
+    public UserDto getUserDtoByUsername(String username) {
+        return getUserDtoFromCacheOrDb(username);
+    }
+
+    public User findUserByUsername(String username) {
+        return userRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
     @Transactional
@@ -113,11 +115,11 @@ public class UserService {
     }
 
     @Transactional
-    public UpdateUserResponse updateUsername(UpdateUsernameRequest updateUsernameRequest) {
+    public UpdateUserResponse changeUsername(ChangeUsernameRequest changeUsernameRequest) {
         var user = getCurrentUser();
-        var newUsername = updateUsernameRequest.getUsername();
+        var newUsername = changeUsernameRequest.getUsername();
 
-        log.debug("User {} is attempting to update username to {}", user.getUsername(), newUsername);
+        log.debug("User {} is attempting to change username to {}", user.getUsername(), newUsername);
 
         verifyNewUsernameIsDifferent(newUsername, user);
         verifyNewUsernameIsFree(newUsername, user);
@@ -127,41 +129,41 @@ public class UserService {
         userRepository.save(user);
         cacheUserAndIdMapping(user);
 
-        log.info("User {} successfully updated username to {}", user.getUsername(), newUsername);
+        log.info("User {} successfully changed username to {}", user.getUsername(), newUsername);
 
         return UpdateUserResponse.builder()
-                .message("Username updated successfully, please log in again with new credentials")
+                .message("Username changed successfully, please log in again with new credentials")
                 .build();
     }
 
     private void verifyNewUsernameIsFree(String newUsername, User user) {
         if (!isUsernameFree(newUsername)) {
-            log.warn("User {} attempted to update username to an existing one", user.getUsername());
+            log.warn("User {} attempted to change username to an existing one", user.getUsername());
             throw new UserUpdateException("Username is already taken");
         }
     }
 
     private void verifyNewUsernameIsDifferent(String newUsername, User user) {
         if (newUsername.equals(user.getUsername())) {
-            log.warn("User {} attempted to update username to the same one", user.getUsername());
+            log.warn("User {} attempted to change username to the same one", user.getUsername());
             throw new UserUpdateException("New username is the same as the old one");
         }
     }
 
     @Transactional
-    public UpdateUserResponse updatePassword(UpdatePasswordRequest updatePasswordRequest) {
+    public UpdateUserResponse changePassword(ChangePasswordRequest changePasswordRequest) {
         var user = getCurrentUser();
 
-        log.debug("User {} is attempting to update password", user.getUsername());
+        log.debug("User {} is attempting to change password", user.getUsername());
 
-        verifyPasswordIsCorrect(updatePasswordRequest.getOldPassword(), user);
-        user.setPassword(passwordEncoder.encode(updatePasswordRequest.getPassword()));
+        verifyPasswordIsCorrect(changePasswordRequest.getOldPassword(), user);
+        user.setPassword(passwordEncoder.encode(changePasswordRequest.getPassword()));
         userRepository.save(user);
 
-        log.info("Password successfully updated for user with username: {}", user.getUsername());
+        log.info("Password successfully change for user with username: {}", user.getUsername());
 
         return UpdateUserResponse.builder()
-                .message("Password updated successfully, please log in again with new credentials")
+                .message("Password changed successfully, please log in again with new credentials")
                 .build();
     }
 
@@ -171,12 +173,6 @@ public class UserService {
         userRedisService.cacheUser(user);
         userRedisService.cacheUsernameToId(savedUser.getUsername(), savedUser.getId());
         log.debug("User cached with username: {}", savedUser.getUsername());
-    }
-
-    public UserDto me() {
-        var userDto = getCurrentUserDto();
-        log.debug("Returning currently authenticated user with username: {}", userDto.getUsername());
-        return userDto;
     }
 
     @Transactional
@@ -242,12 +238,6 @@ public class UserService {
 
     public Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
         return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username);
-    }
-
-    private UserDto getCurrentUserDto() {
-        var username = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.debug("Attempting to current user from token with username: {}", username);
-        return getUserDtoFromCacheOrDb(username);
     }
 
     private UserDto getUserDtoFromCacheOrDb(String username) {

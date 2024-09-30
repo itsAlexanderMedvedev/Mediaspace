@@ -82,8 +82,8 @@ public class User implements UserDetails {
     private List<Like> likes = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "user")
     @OrderBy("createdAt DESC")
+    @OneToMany(mappedBy = "user")
     private List<Comment> comments = new ArrayList<>();
 
     @Builder.Default
@@ -114,7 +114,6 @@ public class User implements UserDetails {
         return username;
     }
 
-    // TODO: Test authorization behaviour of deleted users
     @Override
     public boolean isEnabled() {
         return !isDeleted;

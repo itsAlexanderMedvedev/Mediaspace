@@ -1,10 +1,9 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.redis.RedisService;
-import com.amedvedev.mediaspace.user.dto.UpdatePasswordRequest;
+import com.amedvedev.mediaspace.user.dto.ChangePasswordRequest;
 import com.amedvedev.mediaspace.user.dto.UserDto;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
-import com.amedvedev.mediaspace.user.dto.UpdateUsernameRequest;
+import com.amedvedev.mediaspace.user.dto.ChangeUsernameRequest;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,33 +59,37 @@ public class UserServiceTest {
     }
 
     @Test
-    public void updateUserSuccessWhenUserExistsAndUsernameValidAndAvailable() {
+    public void changeUsernameSuccessWhenUserExistsAndUsernameValidAndAvailable() {
         // Given
         String oldUsername = "oldUser";
         String newUsername = "newUser";
 
-        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest(newUsername);
+        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest(newUsername);
 
         User existingUser = new User();
         existingUser.setUsername(oldUsername);
 
+        var authentication = mock(UsernamePasswordAuthenticationToken.class);
+        var securityContext = mock(SecurityContext.class);
+        SecurityContextHolder.setContext(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("oldUser");
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.of(existingUser));
         when(userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(newUsername)).thenReturn(Optional.empty());
-        when(userMapper.toUserDto(existingUser)).thenReturn(UserDto.builder().username(oldUsername).build());
 
         // When
-        userService.updateUsername(updateUsernameRequest);
+        userService.changeUsername(changeUsernameRequest);
 
         // Then
         verify(userRepository).save(argThat(user -> user.getUsername().equals(newUsername)));
     }
 
     @Test
-    public void updateUserNewPasswordEncoded() {
+    public void changePasswordNewPasswordEncoded() {
         // Given
         String username = "user";
         String newPassword = "newPassword";
-        UpdatePasswordRequest updatePasswordRequest = new UpdatePasswordRequest("oldPassword", newPassword);
+        ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest("oldPassword", newPassword);
         User existingUser = new User();
         existingUser.setUsername(username);
 
@@ -101,7 +104,7 @@ public class UserServiceTest {
         when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.of(existingUser));
 
         // When
-        userService.updatePassword(updatePasswordRequest);
+        userService.changePassword(changePasswordRequest);
 
         // Then
         verify(userRepository).save(argThat(user -> user.getPassword().equals("encodedPassword")));
@@ -109,17 +112,22 @@ public class UserServiceTest {
     }
 
     @Test
-    public void updateUserNewUsernameSameAsOldThrowsException() {
+    public void changeUsernameNewUsernameSameAsOldThrowsException() {
         // Given
         String username = "user";
-        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest(username);
+        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest(username);
         User existingUser = new User();
         existingUser.setUsername(username);
 
+        var authentication = mock(UsernamePasswordAuthenticationToken.class);
+        var securityContext = mock(SecurityContext.class);
+        SecurityContextHolder.setContext(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("user");
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.of(existingUser));
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUsername(updateUsernameRequest))
+        assertThatThrownBy(() -> userService.changeUsername(changeUsernameRequest))
                 .isInstanceOf(UserUpdateException.class)
                 .hasMessage("New username is the same as the old one");
 
@@ -127,11 +135,11 @@ public class UserServiceTest {
     }
 
     @Test
-    public void updateNewUsernameAlreadyTakenThrowsException() {
+    public void changeUsernameNewUsernameAlreadyTakenThrowsException() {
         // Given
         String oldUsername = "oldUsername";
         String newUsername = "newTakenUsername";
-        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest(newUsername);
+        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest(newUsername);
 
         User existingUser = new User();
         existingUser.setUsername(oldUsername);
@@ -149,7 +157,7 @@ public class UserServiceTest {
 
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUsername(updateUsernameRequest))
+        assertThatThrownBy(() -> userService.changeUsername(changeUsernameRequest))
                 .isInstanceOf(UserUpdateException.class)
                 .hasMessage("Username is already taken");
 
@@ -157,9 +165,9 @@ public class UserServiceTest {
     }
 
     @Test
-    public void updateUserWhenUserDoesNotExistThrowsException() {
+    public void changeUsernameWhenUserDoesNotExistThrowsException() {
         // Given
-        UpdateUsernameRequest updateUsernameRequest = new UpdateUsernameRequest("newUsername");
+        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest("newUsername");
 
         var authentication = mock(UsernamePasswordAuthenticationToken.class);
         var securityContext = mock(SecurityContext.class);
@@ -171,7 +179,7 @@ public class UserServiceTest {
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUsername(updateUsernameRequest))
+        assertThatThrownBy(() -> userService.changeUsername(changeUsernameRequest))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("Authentication object is invalid or does not contain a username");
 

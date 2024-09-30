@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdatePasswordRequest {
+public class ChangePasswordRequest {
 
     @Schema(description = "The old password for the user", example = "old_password", nullable = true)
     private String oldPassword;

@@ -25,7 +25,7 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    @Operation(summary = "Register a new user", description = "Creates a new user account.")
+    @Operation(summary = "Register a new user")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "201", description = "User registered successfully",
@@ -47,7 +47,7 @@ public class AuthenticationController {
     }
 
 
-    @Operation(summary = "Login a user", description = "Authenticates a user and returns a JWT token.")
+    @Operation(summary = "Login a user")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Login successful",

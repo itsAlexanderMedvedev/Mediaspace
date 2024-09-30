@@ -4,14 +4,13 @@ import com.amedvedev.mediaspace.auth.JwtService;
 import com.amedvedev.mediaspace.auth.dto.LoginRequest;
 import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.dto.RestoreUserRequest;
-import com.amedvedev.mediaspace.user.dto.UpdatePasswordRequest;
-import com.amedvedev.mediaspace.user.dto.UpdateUsernameRequest;
+import com.amedvedev.mediaspace.user.dto.ChangePasswordRequest;
+import com.amedvedev.mediaspace.user.dto.ChangeUsernameRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -20,10 +19,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.Time;
 
 import java.util.stream.Stream;
 
@@ -107,8 +104,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     void shouldFollowUser() {
         var userToFollow = createUser("user-to-follow");
 
-        System.out.println(userToFollow.getUsername());
-
         given()
                 .header("Authorization", "Bearer " + token)
                 .when()
@@ -118,9 +113,6 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
         var follower = userRepository.findByUsernameIgnoreCase(user.getUsername()).orElseThrow();
         var followee = userRepository.findByUsernameIgnoreCase(userToFollow.getUsername()).orElseThrow();
-
-        Hibernate.initialize(follower.getFollowing());
-        Hibernate.initialize(followee.getFollowers());
 
         assertThat(followee.getFollowers()).contains(follower);
         assertThat(follower.getFollowing()).contains(followee);
@@ -213,13 +205,13 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldUpdateUserUsernameAlone() {
-        var updateUserRequest = UpdateUsernameRequest.builder().username("new-username").build();
+    void shouldChangeUserUsernameAlone() {
+        var changeUsernameRequest = ChangeUsernameRequest.builder().username("new-username").build();
 
         given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)
-                .body(updateUserRequest)
+                .body(changeUsernameRequest)
                 .when()
                 .patch("/username")
                 .then()
@@ -228,14 +220,14 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("getArgumentsForShouldNotUpdateUsernameNotMatchingPattern")
-    void shouldNotUpdateUsernameNotMatchingPattern(UpdateUsernameRequest updateUsernameRequest, String expectedErrorMessage) {
-        UpdateUsernameRequest.builder().username("new username").build();
+    @MethodSource("getArgumentsForShouldNotChangeUsernameNotMatchingPattern")
+    void shouldNotChangeUsernameNotMatchingPattern(ChangeUsernameRequest changeUsernameRequest, String expectedErrorMessage) {
+        ChangeUsernameRequest.builder().username("new username").build();
 
         given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)
-                .body(updateUsernameRequest)
+                .body(changeUsernameRequest)
                 .log().all()
                 .when()
                 .patch("/username")
@@ -245,22 +237,22 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .body("errors.username", equalTo(expectedErrorMessage));
     }
 
-    static Stream<Arguments> getArgumentsForShouldNotUpdateUsernameNotMatchingPattern() {
+    static Stream<Arguments> getArgumentsForShouldNotChangeUsernameNotMatchingPattern() {
         return Stream.of(
-                Arguments.of(new UpdateUsernameRequest("new username"),
+                Arguments.of(new ChangeUsernameRequest("new username"),
                         "Username must not contain spaces and may only include English letters, digits, underscores (_), hyphens (-), or periods (.)"),
 
-                Arguments.of(new UpdateUsernameRequest("n"),
+                Arguments.of(new ChangeUsernameRequest("n"),
                         "Username must be between 3 and 20 characters"),
 
-                Arguments.of(new UpdateUsernameRequest("n".repeat(21)),
+                Arguments.of(new ChangeUsernameRequest("n".repeat(21)),
                         "Username must be between 3 and 20 characters")
         );
     }
 
     @Test
-    void shouldUpdateUserPassword() {
-        var updatePasswordRequest = UpdatePasswordRequest.builder()
+    void shouldChangeUserPassword() {
+        var changePasswordRequest = ChangePasswordRequest.builder()
                 .oldPassword("password")
                 .password("new-password")
                 .build();
@@ -268,7 +260,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)
-                .body(updatePasswordRequest)
+                .body(changePasswordRequest)
                 .when()
                 .patch("/password")
                 .then()
@@ -277,12 +269,12 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("getArgumentsForShouldNotUpdatePasswordNotMatchingPattern")
-    void shouldNotUpdatePasswordNotMatchingPattern(UpdatePasswordRequest updateUsernameRequest, String expectedErrorMessage) {
+    @MethodSource("getArgumentsForShouldNotChangePasswordNotMatchingPattern")
+    void shouldNotChangePasswordNotMatchingPattern(ChangePasswordRequest changeUsernameRequest, String expectedErrorMessage) {
         given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)
-                .body(updateUsernameRequest)
+                .body(changeUsernameRequest)
                 .when()
                 .patch("/password")
                 .then()
@@ -290,27 +282,27 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .body("errors.password", equalTo(expectedErrorMessage));
     }
 
-    static Stream<Arguments> getArgumentsForShouldNotUpdatePasswordNotMatchingPattern() {
+    static Stream<Arguments> getArgumentsForShouldNotChangePasswordNotMatchingPattern() {
         return Stream.of(
-                Arguments.of(new UpdatePasswordRequest("password", "new password"),
+                Arguments.of(new ChangePasswordRequest("password", "new password"),
                         "Password cannot contain spaces"),
 
-                Arguments.of(new UpdatePasswordRequest("password", "n"),
+                Arguments.of(new ChangePasswordRequest("password", "n"),
                         "Password must be between 6 and 20 characters"),
 
-                Arguments.of(new UpdatePasswordRequest("password", "n".repeat(21)),
+                Arguments.of(new ChangePasswordRequest("password", "n".repeat(21)),
                         "Password must be between 6 and 20 characters")
         );
     }
 
     @Test
-    void shouldNotUpdateUserWithSameUsername() {
-        var updateUserRequest = UpdateUsernameRequest.builder().username(user.getUsername()).build();
+    void shouldNotChangeUserWithSameUsername() {
+        var changeUserRequest = ChangeUsernameRequest.builder().username(user.getUsername()).build();
 
         given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)
-                .body(updateUserRequest)
+                .body(changeUserRequest)
                 .when()
                 .patch("/username")
                 .then()
@@ -319,14 +311,14 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldNotUpdateUserWithTakenUsername() {
+    void shouldNotChangeUserWithTakenUsername() {
         userRepository.save(User.builder().username("taken-username").password(passwordEncoder.encode("password")).build());
-        var updateUserRequest = UpdateUsernameRequest.builder().username("taken-username").build();
+        var changeUserRequest = ChangeUsernameRequest.builder().username("taken-username").build();
 
         given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)
-                .body(updateUserRequest)
+                .body(changeUserRequest)
                 .when()
                 .patch("/username")
                 .then()

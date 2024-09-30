@@ -1,10 +1,10 @@
 package com.amedvedev.mediaspace.story;
 
+import com.amedvedev.mediaspace.exception.ForbiddenActionException;
 import com.amedvedev.mediaspace.redis.RedisService;
 import com.amedvedev.mediaspace.story.dto.ViewStoriesFeedResponse;
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
-import com.amedvedev.mediaspace.story.exception.ForbiddenActionException;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.media.Media;
 import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;

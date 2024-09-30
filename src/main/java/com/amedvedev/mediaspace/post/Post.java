@@ -57,7 +57,7 @@ public class Post {
 
     @Builder.Default
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Like> likes = new HashSet<>();
+    private List<Like> likes = new ArrayList<>();
 
     @Builder.Default
     @OrderBy("createdAt DESC")

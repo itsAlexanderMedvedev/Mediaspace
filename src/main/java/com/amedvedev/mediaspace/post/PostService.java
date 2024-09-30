@@ -27,10 +27,9 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class PostService {
 
-    private final PostRepository postRepository;
     private final UserService userService;
     private final PostMapper postMapper;
-    private final CommentService commentService;
+    private final PostRepository postRepository;
 
     @Transactional
     public ViewPostResponse createPost(CreatePostRequest request) {
@@ -119,11 +118,11 @@ public class PostService {
 //        post.addComment(comment);
 //    }
 
-    @Transactional(readOnly = true)
-    public ViewPostCommentsResponse getComments(Long postId) {
-        var post = getPostById(postId);
-        return postMapper.toViewPostCommentsResponse(post);
-    }
+//    @Transactional(readOnly = true)
+//    public ViewPostCommentsResponse getComments(Long postId) {
+//        var post = getPostById(postId);
+//        return postMapper.toViewPostCommentsResponse(post);
+//    }
 
     @Transactional
     public void likePost(Long postId) {
@@ -169,9 +168,7 @@ public class PostService {
     @Transactional
     public void unlikePost(Long postId) {
         var post = getPostById(postId);
-
         var user = userService.getCurrentUser();
-
         var removed = post.getLikes().removeIf(like -> like.getUser().getId().equals(user.getId()));
 
         if (!removed) {

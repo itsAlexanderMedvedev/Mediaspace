@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateUsernameRequest {
+public class ChangeUsernameRequest {
 
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     @Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "Username must not contain spaces and may only include English letters, digits, underscores (_), hyphens (-), or periods (.)")

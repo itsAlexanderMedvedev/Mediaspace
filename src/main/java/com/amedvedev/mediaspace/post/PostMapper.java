@@ -30,10 +30,6 @@ public abstract class PostMapper {
     @Mapping(target = "commentsCount", expression = "java(post.getComments().size())")
     public abstract ViewPostResponse toViewPostResponse(Post post);
 
-    @Mapping(source = "id", target = "postId")
-    @Mapping(target = "comments", qualifiedByName = "mapComments")
-    public abstract ViewPostCommentsResponse toViewPostCommentsResponse(Post post);
-
     @Mapping(target = "coverImage", expression = "java(post.getPostMediaList().get(0).getMedia().getUrl())")
     public abstract UserProfilePostResponse toUserProfilePostResponse(Post post);
 
@@ -41,14 +37,6 @@ public abstract class PostMapper {
     protected List<ViewPostMediaResponse> mapPostMediaList(List<PostMedia> postMediaList) {
         return postMediaList.stream()
                 .map(postMedia -> postMediaMapper.toViewPostMediaDto(postMedia))
-                .toList();
-    }
-
-    @Named("mapComments")
-    protected List<ViewCommentResponse> mapComments(List<Comment> comments) {
-        return comments.stream()
-                .map(commentMapper::toViewCommentResponse)
-//                .sorted(Comparator.comparing(CommentDto::getWrittenAt).reversed())
                 .toList();
     }
 
