@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -49,8 +50,16 @@ public class CommentController {
     })
     @PostMapping("/posts/{postId}")
     @ResponseStatus(HttpStatus.CREATED)
-    public ViewCommentResponse addComment(@PathVariable Long postId, @RequestBody AddCommentRequest addCommentRequest) {
+    public ViewCommentResponse addComment(@PathVariable Long postId,
+                                          @Valid @RequestBody AddCommentRequest addCommentRequest) {
         return commentService.addComment(postId, addCommentRequest);
+    }
+
+    @PostMapping("/{commentId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ViewCommentResponse addNestedComment(@PathVariable Long commentId,
+                                                @Valid @RequestBody AddCommentRequest addCommentRequest) {
+        return commentService.addNestedComment(commentId, addCommentRequest);
     }
 
     @Operation(summary = "Edit a comment")
@@ -79,7 +88,7 @@ public class CommentController {
     @PatchMapping("/{commentId}")
     @ResponseStatus(HttpStatus.OK)
     public ViewCommentResponse editComment(@PathVariable Long commentId,
-                                           @RequestBody EditCommentRequest editCommentRequest) {
+                                           @Valid @RequestBody EditCommentRequest editCommentRequest) {
 
         return commentService.editComment(commentId, editCommentRequest);
     }

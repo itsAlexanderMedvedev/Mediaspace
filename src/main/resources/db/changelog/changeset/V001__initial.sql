@@ -6,7 +6,7 @@ CREATE TABLE media (
 CREATE TABLE _user (
     id                 bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     profile_picture_id bigint,
-    username           varchar(20) NOT NULL,
+    username           varchar(20) NOT NULL UNIQUE,
     password           varchar(64) NOT NULL,
     created_at         timestamp   DEFAULT current_timestamp,
     updated_at         timestamp   DEFAULT current_timestamp,

@@ -9,6 +9,7 @@ import com.amedvedev.mediaspace.post.comment.dto.ViewCommentResponse;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.comment.exception.CommentNotFoundException;
 import com.amedvedev.mediaspace.user.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,6 @@ public class CommentService {
         var user = userService.getCurrentUser();
         var body = request.getBody();
 
-        verifyCommentBodyIsNotBlank(body);
-
         var comment = Comment.builder()
                 .user(user)
                 .post(post)
@@ -56,7 +55,6 @@ public class CommentService {
         var newCommentBody = editCommentRequest.getUpdatedBody();
 
         verifyCommentBelongsToUser(comment);
-        verifyCommentBodyIsNotBlank(newCommentBody);
 
         if (newCommentBody.equals(comment.getBody())) {
             log.info("No changes detected in commentId: {}. Skipping update.", commentId);
@@ -77,7 +75,7 @@ public class CommentService {
 
         var comments = commentRepository.findAllByPostId(postId);
 
-        log.info("Retrieved {} comments for postId: {}", Integer.valueOf(comments.size()), postId);
+        log.info("Retrieved {} comments for postId: {}", comments.size(), postId);
 
         return commentMapper.toViewPostCommentsResponse(comments, postId);
     }
@@ -96,14 +94,8 @@ public class CommentService {
         log.info("Comment deleted successfully. CommentId: {}", commentId);
     }
 
-    private void verifyCommentBodyIsNotBlank(String commentBody) {
-        if (commentBody == null || commentBody.isBlank()) {
-            log.warn("Comment body is blank or null.");
-            throw new BadRequestActionException("Comment body cannot be empty");
-        }
-    }
-
     private void verifyCommentBelongsToUser(Comment comment) {
+        System.out.println("service " + comment.getUser().getId() + " " + userService.getCurrentUser().getId());
         var currentUser = userService.getCurrentUser();
         if (!comment.getUser().getId().equals(currentUser.getId())) {
             log.warn("UserId: {} attempted to modify commentId: {} which does not belong to them",
@@ -118,5 +110,27 @@ public class CommentService {
                     log.error("Comment not found. CommentId: {}", commentId);
                     return new CommentNotFoundException("Comment not found");
                 });
+    }
+
+    public ViewCommentResponse addNestedComment(Long commentId, AddCommentRequest addCommentRequest) {
+        log.debug("Attempting to add nested comment to commentId: {}, request: {}", commentId, addCommentRequest);
+
+        var parentComment = findCommentById(commentId);
+        var user = userService.getCurrentUser();
+        var body = addCommentRequest.getBody();
+
+        var nestedComment = Comment.builder()
+                .user(user)
+                .post(parentComment.getPost())
+                .body(body)
+                .parentComment(parentComment)
+                .build();
+
+        var savedComment = commentRepository.save(nestedComment);
+
+        log.info("Nested comment added successfully. CommentId: {}, parentCommentId: {}, userId: {}",
+                savedComment.getId(), commentId, user.getId());
+
+        return commentMapper.toViewCommentResponse(savedComment);
     }
 }
