@@ -36,7 +36,7 @@ public class Comment {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "parent_comment_id")
     private Comment parentComment;
 
@@ -58,4 +58,9 @@ public class Comment {
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
+
+    public void addNestedComment(Comment comment) {
+        comment.setParentComment(this);
+        nestedComments.add(comment);
+    }
 }

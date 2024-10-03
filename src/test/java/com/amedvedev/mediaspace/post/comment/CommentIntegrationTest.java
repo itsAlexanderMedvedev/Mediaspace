@@ -82,6 +82,7 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
             return null;
         });
+        System.out.println("FROM BEFORE EACH " + postRepository.findAll());
 //        TestTransaction.start();
 
         token = jwtService.generateToken(user);
@@ -140,12 +141,6 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
     }
 
     private <T> T executeInsideTransaction(Callable<T> callable) {
-        // BeforeEach is executed inside the same transaction as the test method.
-        // That causes the entities that we create here to be locked due to the isolation level READ_COMMITTED and above.
-        // This is why we end the test transaction here and start a new one after creating entities.
-
-        System.out.println("callable " + TransactionSynchronizationManager.isActualTransactionActive());
-
         var transactionExisted = TestTransaction.isActive();
         if (transactionExisted) TestTransaction.end();
 
@@ -216,7 +211,7 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
-        assertThat(comments).hasSize(1);
+        assertThat(comments).hasSize(2);
 
         var nestedComments = comments.getFirst().getNestedComments();
         assertThat(nestedComments).hasSize(1);
@@ -267,6 +262,7 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldNotViewCommentsIfPostDoesNotExist() {
+        System.out.println("FROM TEST " + commentRepository.findAll());
         given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + token)

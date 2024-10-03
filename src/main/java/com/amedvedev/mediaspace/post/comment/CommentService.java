@@ -71,19 +71,19 @@ public class CommentService {
 
     @Transactional(readOnly = true)
     public ViewPostCommentsResponse getCommentsByPostId(Long postId) {
-        log.debug("Fetching comments for postId: {}", postId);
+        log.debug("Checking if post exists. PostId: {}", postId);
+        var post = postService.getPostById(postId);
 
+        log.debug("Fetching comments for postId: {}", postId);
         var comments = commentRepository.findAllByPostId(postId);
 
         log.info("Retrieved {} comments for postId: {}", comments.size(), postId);
-
         return commentMapper.toViewPostCommentsResponse(comments, postId);
     }
 
     @Transactional
     public void deleteComment(Long commentId) {
         log.debug("Attempting to delete commentId: {}", commentId);
-
         var comment = findCommentById(commentId);
 
         verifyCommentBelongsToUser(comment);
@@ -106,30 +106,29 @@ public class CommentService {
 
     private Comment findCommentById(Long commentId) {
         return commentRepository.findById(commentId)
-                .orElseThrow(() -> {
-                    log.error("Comment not found. CommentId: {}", commentId);
-                    return new CommentNotFoundException("Comment not found");
-                });
+                .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
     }
 
     public ViewCommentResponse addNestedComment(Long commentId, AddCommentRequest addCommentRequest) {
         log.debug("Attempting to add nested comment to commentId: {}, request: {}", commentId, addCommentRequest);
 
         var parentComment = findCommentById(commentId);
-        var user = userService.getCurrentUser();
-        var body = addCommentRequest.getBody();
 
         var nestedComment = Comment.builder()
-                .user(user)
+                .user(userService.getCurrentUser())
                 .post(parentComment.getPost())
-                .body(body)
-                .parentComment(parentComment)
+                .body(addCommentRequest.getBody())
                 .build();
+        parentComment.addNestedComment(nestedComment);
 
-        var savedComment = commentRepository.save(nestedComment);
+        var savedComment = commentRepository.save(parentComment);
+
+        System.out.println("FROM SERVICE");
+        System.out.println(commentRepository.findAll());
+        System.out.println(savedComment.getNestedComments());
 
         log.info("Nested comment added successfully. CommentId: {}, parentCommentId: {}, userId: {}",
-                savedComment.getId(), commentId, user.getId());
+                savedComment.getId(), commentId, userService.getCurrentUser().getId());
 
         return commentMapper.toViewCommentResponse(savedComment);
     }
