@@ -52,9 +52,6 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
     private JwtService jwtService;
 
     @Autowired
-    private PlatformTransactionManager transactionManager;
-
-    @Autowired
     private CommentMapper commentMapper;
 
     @Autowired
@@ -68,12 +65,10 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
 
     @BeforeEach
-//    @Transactional(propagation = Propagation.REQUIRES_NEW)
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = "/api/comments";
 
-//        TestTransaction.end();
         executeInsideTransaction(() -> {
             jdbcTemplate.execute("TRUNCATE comment, post, _user RESTART IDENTITY CASCADE");
 
@@ -82,8 +77,6 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
             return null;
         });
-        System.out.println("FROM BEFORE EACH " + postRepository.findAll());
-//        TestTransaction.start();
 
         token = jwtService.generateToken(user);
     }
@@ -140,25 +133,6 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         });
     }
 
-    private <T> T executeInsideTransaction(Callable<T> callable) {
-        var transactionExisted = TestTransaction.isActive();
-        if (transactionExisted) TestTransaction.end();
-
-        TransactionDefinition def = new DefaultTransactionDefinition();
-        TransactionStatus status = transactionManager.getTransaction(def);
-
-        try {
-            T result = callable.call();
-            transactionManager.commit(status);
-            return result;
-        } catch (Exception e) {
-            transactionManager.rollback(status);
-            throw new RuntimeException(e);
-        } finally {
-            if (transactionExisted) TestTransaction.start();
-        }
-    }
-
     @Test
     void shouldCreateComment() {
         var commentRequest = AddCommentRequest.builder().body("text").build();
@@ -207,11 +181,12 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
                 .body(commentRequest)
                 .post("/{commentId}", 1)
                 .then()
+                .log().all()
                 .statusCode(201);
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
-        assertThat(comments).hasSize(2);
+        assertThat(comments).hasSize(1);
 
         var nestedComments = comments.getFirst().getNestedComments();
         assertThat(nestedComments).hasSize(1);

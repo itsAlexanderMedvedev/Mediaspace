@@ -100,30 +100,6 @@ public class PostService {
         postRepository.deleteById(id);
     }
 
-//    @Transactional
-//    public void addComment(Long postId, AddCommentRequest request) {
-//        var post = getPostById(postId);
-//        addCommentToPost(request.getBody(), post);
-//        postRepository.save(post);
-//    }
-
-//    private void addCommentToPost(String commentBody, Post post) {
-//        var user = userService.getCurrentUser();
-//
-//        var comment = Comment.builder()
-//                .user(user)
-//                .body(commentBody)
-//                .build();
-//
-//        post.addComment(comment);
-//    }
-
-//    @Transactional(readOnly = true)
-//    public ViewPostCommentsResponse getComments(Long postId) {
-//        var post = getPostById(postId);
-//        return postMapper.toViewPostCommentsResponse(post);
-//    }
-
     @Transactional
     public void likePost(Long postId) {
         var post = getPostById(postId);
@@ -137,33 +113,6 @@ public class PostService {
     private Like buildLike(Long postId, User user) {
         return Like.builder().id(new LikeId(user.getId(), postId)).user(user).build();
     }
-
-//    @Transactional
-//    public void deleteComment(Long postId, Long commentId) {
-//        var comment = getCommentById(commentId);
-//
-//        verifyCommentBelongsToPost(postId, comment);
-//        verifyCommentBelongsToUser(comment);
-//
-//        postRepository.save(post);
-//    }
-
-//    private Comment getCommentById(Long commentId) {
-//        return commentRepository.findById(commentId)
-//                .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
-//    }
-//
-//    private void verifyCommentBelongsToPost(Long postId, Comment comment) {
-//        if (!comment.getPost().getId().equals(postId)) {
-//           throw new CommentNotFoundException("Comment not found in the specified post");
-//        }
-//    }
-//
-//    private void verifyCommentBelongsToUser(Comment comment) {
-//        if (!comment.getUser().getUsername().equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
-//            throw new ForbiddenActionException("Cannot delete comment of another user");
-//        }
-//    }
 
     @Transactional
     public void unlikePost(Long postId) {

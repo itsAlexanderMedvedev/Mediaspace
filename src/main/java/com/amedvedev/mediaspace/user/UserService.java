@@ -257,28 +257,4 @@ public class UserService {
         return userMapper.toUserDto(user);
     }
 
-//    protected List<UserProfilePostResponse> getPosts(Long id) {
-//        var posts = getPostsByUserId(id);
-//        return posts.stream()
-//                .map(postMapper::toUserProfilePostResponse)
-//                .toList();
-//    }
-//
-//    @Named("storiesToIds")
-//    protected List<Long> storiesToIds(Long id) {
-//        return storyService.getStoriesByUserId(id).stream()
-//                .map(Story::getId)
-//                .toList();
-//    }
-//
-//    @Named("followersCount")
-//    protected long followersCount(Long id) {
-//        return userRepository.countFollowersByUserId(id);
-//    }
-//
-//    @Named("followingCount")
-//    protected long followingCount(Long id) {
-//        return userRepository.countFollowingByUserId(id);
-//    }
-
 }

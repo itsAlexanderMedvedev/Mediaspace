@@ -2,6 +2,7 @@ package com.amedvedev.mediaspace.post.comment;
 
 import com.amedvedev.mediaspace.exception.BadRequestActionException;
 import com.amedvedev.mediaspace.exception.ForbiddenActionException;
+import com.amedvedev.mediaspace.post.PostRepository;
 import com.amedvedev.mediaspace.post.PostService;
 import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
 import com.amedvedev.mediaspace.post.comment.dto.EditCommentRequest;
@@ -24,6 +25,7 @@ public class CommentService {
     private final UserService userService;
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
+    private final PostRepository postRepository;
 
     @Transactional
     public ViewCommentResponse addComment(Long postId, AddCommentRequest request) {
@@ -109,6 +111,7 @@ public class CommentService {
                 .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
     }
 
+    @Transactional
     public ViewCommentResponse addNestedComment(Long commentId, AddCommentRequest addCommentRequest) {
         log.debug("Attempting to add nested comment to commentId: {}, request: {}", commentId, addCommentRequest);
 
@@ -116,7 +119,6 @@ public class CommentService {
 
         var nestedComment = Comment.builder()
                 .user(userService.getCurrentUser())
-                .post(parentComment.getPost())
                 .body(addCommentRequest.getBody())
                 .build();
         parentComment.addNestedComment(nestedComment);
@@ -126,6 +128,9 @@ public class CommentService {
         System.out.println("FROM SERVICE");
         System.out.println(commentRepository.findAll());
         System.out.println(savedComment.getNestedComments());
+
+        System.out.println("POST COMMENTS");
+        System.out.println(commentMapper.commentsToDto(postRepository.findById(savedComment.getPost().getId()).get().getComments()));
 
         log.info("Nested comment added successfully. CommentId: {}, parentCommentId: {}, userId: {}",
                 savedComment.getId(), commentId, userService.getCurrentUser().getId());

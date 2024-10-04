@@ -23,6 +23,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "post")
+// TODO: soft delete posts?
 @SQLRestriction(value = "is_deleted<>'TRUE'")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Post {

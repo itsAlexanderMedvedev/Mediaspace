@@ -49,7 +49,7 @@ CREATE TABLE _like (
 CREATE TABLE comment (
     id                bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     _user_id          bigint    NOT NULL,
-    post_id           bigint    NOT NULL,
+    post_id           bigint,
     parent_comment_id bigint,
     body              varchar(2048) NOT NULL,
     created_at        timestamp DEFAULT current_timestamp,

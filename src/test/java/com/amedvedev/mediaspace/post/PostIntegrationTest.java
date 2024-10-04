@@ -9,9 +9,6 @@ import com.amedvedev.mediaspace.media.postmedia.PostMedia;
 import com.amedvedev.mediaspace.media.postmedia.PostMediaId;
 import com.amedvedev.mediaspace.media.postmedia.PostMediaRepository;
 import com.amedvedev.mediaspace.post.comment.Comment;
-import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
-import com.amedvedev.mediaspace.post.comment.dto.ViewCommentResponse;
-import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
 import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
@@ -25,13 +22,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.hibernate.Session;
+import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -41,6 +40,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
+@Transactional
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class PostIntegrationTest extends AbstractIntegrationTest {
 
@@ -71,47 +71,58 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = "/api/posts";
 
-        jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
+        executeInsideTransaction(() -> {
+            jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
+            user = createUser("user");
+            return null;
+        });
 
-        user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);
     }
 
+    private User createUser(String username) {
+        return userRepository.save(User.builder().username(username).password("encoded-password").build());
+    }
+
     private Post createPost(String title, String description) {
-        var post = Post.builder()
-                .user(user)
-                .title(title)
-                .description(description)
-                .build();
+        return executeInsideTransaction(() -> {
+            var post = Post.builder()
+                    .user(user)
+                    .title(title)
+                    .description(description)
+                    .build();
 
-        var mediaUrls = List.of("https://example.com/image.jpg", "https://example.com/video.mp4");
+            var mediaUrls = List.of("https://example.com/image.jpg", "https://example.com/video.mp4");
 
-        var postMediaList = IntStream.range(0, mediaUrls.size())
-                .mapToObj(index -> {
-                    var url = mediaUrls.get(index);
-                    var media = Media.builder().url(url).build();
-                    var mediaPostId = new PostMediaId(media.getId(), index + 1);
-                    return new PostMedia(mediaPostId, media, post);
-                })
-                .toList();
+            var postMediaList = IntStream.range(0, mediaUrls.size())
+                    .mapToObj(index -> {
+                        var url = mediaUrls.get(index);
+                        var media = Media.builder().url(url).build();
+                        var mediaPostId = new PostMediaId(media.getId(), index + 1);
+                        return new PostMedia(mediaPostId, media, post);
+                    })
+                    .toList();
 
-        post.setPostMediaList(postMediaList);
+            post.setPostMediaList(postMediaList);
 
-        return postRepository.save(post);
+            return postRepository.save(post);
+        });
     }
 
     private Post addCommentsToPost(Post post, List<String> comments) {
-        comments.forEach(body -> {
-            var comment = Comment.builder()
-                    .body(body)
-                    .post(post)
-                    .user(user)
-                    .build();
+        return executeInsideTransaction(() -> {
+            comments.forEach(body -> {
+                var comment = Comment.builder()
+                        .body(body)
+                        .post(post)
+                        .user(user)
+                        .build();
 
-            post.getComments().add(comment);
+                post.getComments().add(comment);
+            });
+
+            return postRepository.save(post);
         });
-
-        return postRepository.save(post);
     }
 
     private CreatePostRequest createPostRequest(String title, String description) {
@@ -248,7 +259,6 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.SUPPORTS)
     void shouldLikePost() {
         var post = createPost("Title", "Hello, World!");
 
@@ -283,7 +293,6 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.SUPPORTS)
     void shouldUnlikePost() {
         var post = createPost("Title", "Hello, World!");
 
@@ -354,12 +363,18 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .map(PostMedia::getMedia)
                 .toList();
 
+        System.out.println("POSTS: " + postRepository.findAll());
+
         given()
                 .header("Authorization", "Bearer " + token)
                 .when()
                 .delete("/{id}", post.getId())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
+
+        // TODO: look into that
+        entityManager.flush();
+        entityManager.clear();
 
         assertThat(postRepository.findById(post.getId())).isEmpty();
         assertThat(postMediaRepository.findAllByPostId(post.getId())).isEmpty();
