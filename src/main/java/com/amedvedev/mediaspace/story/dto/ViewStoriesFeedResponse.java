@@ -16,7 +16,7 @@ public class ViewStoriesFeedResponse {
     private String username;
 
     @Schema(description = "Media URL", example = "https://www.example.com/media.mp4")
-    private String userPicture;
+    private String userPictureUrl;
 
     @Schema(description = "The story ID", example = "1")
     private Long storyId;

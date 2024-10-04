@@ -22,7 +22,6 @@ import java.util.List;
 public abstract class PostMapper {
 
     private PostMediaMapper postMediaMapper;
-    private CommentMapper commentMapper;
 
     @Mapping(source = "user.username", target = "username")
     @Mapping(source = "postMediaList", target = "postMediaList", qualifiedByName = "mapPostMediaList")
@@ -43,10 +42,5 @@ public abstract class PostMapper {
     @Autowired
     public void setPostMediaMapper(PostMediaMapper postMediaMapper) {
         this.postMediaMapper = postMediaMapper;
-    }
-
-    @Autowired
-    public void setCommentMapper(CommentMapper commentMapper) {
-        this.commentMapper = commentMapper;
     }
 }

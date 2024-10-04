@@ -64,7 +64,7 @@ public class StoryController {
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ViewStoryResponse getStoryById(@PathVariable Long id) {
-        return storyService.getStoryById(id);
+        return storyService.getViewStoryResponseByStoryId(id);
     }
 
     @Operation(summary = "Get all stories of a user")

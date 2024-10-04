@@ -466,6 +466,34 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldNotAllowUnauthorizedUserToEditComment() {
+        var commentRequest = AddCommentRequest.builder().body("text").build();
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("Authorization", "Bearer " + token)
+                .body(commentRequest)
+                .post("/posts/{postId}", post.getId())
+                .then()
+                .statusCode(201);
+
+        var updatedCommentRequest = EditCommentRequest.builder().updatedBody("new text").build();
+        var commentId = 1;
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(updatedCommentRequest)
+                .patch("/{commentId}", commentId)
+                .then()
+                .statusCode(401);
+
+        var updatedPost = postRepository.findById(post.getId()).orElseThrow();
+        var comments = updatedPost.getComments();
+        assertThat(comments).hasSize(1);
+        assertThat(comments.getFirst().getBody()).isEqualTo("text");
+    }
+
+    @Test
     void shouldDeleteComment() {
         var commentRequest = AddCommentRequest.builder().body("text").build();
 
