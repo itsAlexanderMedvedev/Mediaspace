@@ -3,7 +3,6 @@ package com.amedvedev.mediaspace.auth;
 import com.amedvedev.mediaspace.auth.dto.LoginRequest;
 import com.amedvedev.mediaspace.auth.dto.LoginResponse;
 import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
-import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserService;
@@ -19,8 +18,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -62,17 +59,13 @@ class AuthenticationServiceTest {
     @Test
     void registerUserSuccess() {
         var request = new RegisterRequest("username", "password");
-
-
-        Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
-                .thenThrow(UserNotFoundException.class);
+        Mockito.when(userService.isUsernameFree(request.getUsername()))
+                .thenReturn(true);
         Mockito.when(passwordEncoder.encode(request.getPassword()))
                 .thenReturn("encoded-password");
 
-        // When
         authenticationService.register(request);
 
-        // Then
         verify(userService).save(argThat(user ->
                 "username".equals(user.getUsername()) && "encoded-password".equals(user.getPassword())
         ));
@@ -82,13 +75,10 @@ class AuthenticationServiceTest {
     void registerUserExists() {
         var request = new RegisterRequest("username", "password");
 
+        Mockito.when(userService.isUsernameFree(request.getUsername()))
+                .thenReturn(false);
 
-        Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
-                .thenReturn(new User());
-
-
-        assertThrows(UsernameAlreadyExistsException.class,
-                () -> authenticationService.register(request));
+        assertThrows(UsernameAlreadyExistsException.class, () -> authenticationService.register(request));
     }
 
 
@@ -96,10 +86,8 @@ class AuthenticationServiceTest {
     void loginInvalidCredentialsThrowsException() {
         var request = new LoginRequest("username", "password");
 
-
         Mockito.when(authenticationManager.authenticate(Mockito.any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(BadCredentialsException.class);
-
 
         assertThrows(BadCredentialsException.class, () -> authenticationService.login(request));
     }
@@ -108,18 +96,19 @@ class AuthenticationServiceTest {
     @Test
     void loginServiceSuccess() {
         var request = new LoginRequest("username", "password");
+        stubAuthenticationProcess(request);
 
+        LoginResponse response = authenticationService.login(request);
 
+        assertThat(response.getToken()).isEqualTo("mock-token");
+    }
+
+    private void stubAuthenticationProcess(LoginRequest request) {
         Mockito.when(authenticationManager.authenticate(Mockito.any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken("username", "password"));
         Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
                 .thenReturn(User.builder().username(request.getUsername()).password("encoded-password").build());
         Mockito.when(jwtService.generateToken(Mockito.any(User.class)))
                 .thenReturn("mock-token");
-
-
-        LoginResponse response = authenticationService.login(request);
-
-        assertThat(response.getToken()).isEqualTo("mock-token");
     }
 }

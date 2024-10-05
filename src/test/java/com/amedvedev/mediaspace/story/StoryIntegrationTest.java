@@ -25,6 +25,9 @@ import static org.hamcrest.Matchers.equalTo;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class StoryIntegrationTest extends AbstractIntegrationTest {
 
+    public static final String STORIES_ENDPOINT = "/api/stories";
+    public static final String ID_ENDPOINT = "/{id}";
+    public static final String USER_USERNAME_ENDPOINT = "/user/{username}";
     @LocalServerPort
     private Integer port;
 
@@ -47,9 +50,9 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        RestAssured.basePath = "/api/stories";
+        RestAssured.basePath = STORIES_ENDPOINT;
 
-        jdbcTemplate.execute("TRUNCATE story, media, _user RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute(CLEAR_DB);
 
         user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);
@@ -73,7 +76,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         var response = given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .contentType(ContentType.JSON)
                 .body(request)
                 .post()
@@ -98,7 +101,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(request)
                 .post()
                 .then()
@@ -111,8 +114,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
         var story = createStory();
 
         var response = given()
-                .header("Authorization", "Bearer " + token)
-                .get("/" + story.getId())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(ID_ENDPOINT, story.getId())
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .extract()
@@ -125,8 +128,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotGetStoryByIdWhenStoryNotFound() {
         given()
-                .header("Authorization", "Bearer " + token)
-                .get("/{id}", 1)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(ID_ENDPOINT, 1)
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Story not found"));
@@ -138,8 +141,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
         createStory();
 
         var response = given()
-                .header("Authorization", "Bearer " + token)
-                .get("/user/" + user.getUsername())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(USER_USERNAME_ENDPOINT, user.getUsername())
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .extract()
@@ -152,8 +155,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldSayNoStoriesFoundWhenUserHasNoStories() {
         given()
-                .header("Authorization", "Bearer " + token)
-                .get("/user/" + user.getUsername())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(USER_USERNAME_ENDPOINT, user.getUsername())
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("User user has no stories"));
@@ -162,8 +165,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotGetStoriesOfUserWhenUserNotFound() {
         given()
-                .header("Authorization", "Bearer " + token)
-                .get("/user/non-existing-user")
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(USER_USERNAME_ENDPOINT,"non-existing-user")
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("User not found"));
@@ -174,7 +177,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
         var story = createStory();
 
         given()
-                .get("/{id}", story.getId())
+                .get(ID_ENDPOINT, story.getId())
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
@@ -184,8 +187,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
         var story = createStory();
 
         given()
-                .header("Authorization", "Bearer " + token)
-                .delete("/" + story.getId())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .delete(ID_ENDPOINT, story.getId())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
@@ -197,16 +200,18 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
         var story = createStory();
 
         given()
-                .delete("/{id}", story.getId())
+                .delete(ID_ENDPOINT, story.getId())
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
 
     @Test
     void shouldNotDeleteStoryWhenStoryNotFound() {
+        var nonExistingStoryId = 1L;
+
         given()
-                .header("Authorization", "Bearer " + token)
-                .delete("/{id}", 1)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .delete(ID_ENDPOINT, nonExistingStoryId)
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Story not found"));
@@ -215,13 +220,12 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotDeleteStoryOfOtherUsers() {
         var story = createStory();
-
         var otherUser = userRepository.save(User.builder().username("another-user").password("encoded-password").build());
         var otherUserToken = jwtService.generateToken(otherUser);
 
         given()
-                .header("Authorization", "Bearer " + otherUserToken)
-                .delete("/{id}", story.getId())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + otherUserToken)
+                .delete(ID_ENDPOINT, story.getId())
                 .then()
                 .statusCode(HttpStatus.FORBIDDEN.value())
                 .body("reason", equalTo("Cannot delete story of another user"));

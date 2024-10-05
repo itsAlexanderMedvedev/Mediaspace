@@ -22,6 +22,12 @@ import static org.hamcrest.Matchers.equalTo;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
+    public static final String ME_ENDPOINT = "/api/users/me";
+    public static final String USERS_ENDPOINT = "/api/users";
+    public static final String REGISTER_ENDPOINT = "/register";
+    public static final String AUTH_ENDPOINT = "/api/auth";
+    public static final String LOGIN_ENDPOINT = "/login";
+
     @LocalServerPort
     private Integer port;
 
@@ -38,11 +44,12 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        RestAssured.basePath = "/api/auth";
-        securedPath = RestAssured.baseURI + ":" + port + "/api/users/me";
-        deletePath = RestAssured.baseURI + ":" + port + "/api/users";
+        RestAssured.basePath = AUTH_ENDPOINT;
+        
+        securedPath = RestAssured.baseURI + ":" + port + ME_ENDPOINT;
+        deletePath = RestAssured.baseURI + ":" + port + USERS_ENDPOINT;
 
-        jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute(CLEAR_DB);
     }
 
     private void registerUser(String username, String password) {
@@ -50,7 +57,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(new RegisterRequest(username, password))
                 .when()
-                .post("/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.CREATED.value())
@@ -62,11 +69,21 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(new LoginRequest(username, password))
                 .when()
-                .post("/login")
+                .post(LOGIN_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .as(LoginResponse.class);
+    }
+
+    private void deleteUser(String token) {
+        given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .when()
+                .delete(deletePath)
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.NO_CONTENT.value());
     }
 
     @Test
@@ -93,7 +110,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(new RegisterRequest("username", "password"))
                 .when()
-                .post("/register")
+                .post(REGISTER_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.CONFLICT.value())
                 .body("reason", equalTo("This username is already taken"));
@@ -107,7 +124,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(new LoginRequest("username", "incorrect"))
                 .when()
-                .post("/login")
+                .post(LOGIN_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Bad credentials"));
@@ -121,7 +138,7 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(new LoginRequest("incorrect", "password"))
                 .when()
-                .post("/login")
+                .post(LOGIN_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Bad credentials"));
@@ -129,11 +146,12 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldNotLoginNonExistingUser() {
+        
         given()
                 .contentType(ContentType.JSON)
                 .body(new LoginRequest("username", "password"))
                 .when()
-                .post("/login")
+                .post(LOGIN_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Bad credentials"));
@@ -148,11 +166,11 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Full authentication is required to access this resource"));
     }
-
+    
     @Test
     void shouldNotPerformRequestWithInvalidToken() {
         given()
-                .header("Authorization", "Bearer invalid")
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + "invalid")
                 .when()
                 .get(securedPath)
                 .then()
@@ -163,11 +181,10 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldReturnMe() {
         registerUser("username", "password");
-
-        var authenticationResponse = loginUser("username", "password");
+        var token = loginUser("username", "password").getToken();
 
         given()
-                .header("Authorization", "Bearer " + authenticationResponse.getToken())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
                 .get(securedPath)
                 .then()
@@ -179,19 +196,11 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotAllowDeletedUsersAccessEndpoints() {
         registerUser("username", "password");
-
-        var authenticationResponse = loginUser("username", "password");
-
-        given()
-                .header("Authorization", "Bearer " + authenticationResponse.getToken())
-                .when()
-                .delete(deletePath)
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.NO_CONTENT.value());
+        var token = loginUser("username", "password").getToken();
+        deleteUser(token);
 
         given()
-                .header("Authorization", "Bearer " + authenticationResponse.getToken())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
                 .get(securedPath)
                 .then()

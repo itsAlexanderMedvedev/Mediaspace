@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = UserController.class)
 class UserControllerTest {
 
+    public static final String USER_ENDPOINT = "/api/users/username";
     @MockBean
     private UserService userService;
 
@@ -37,7 +38,7 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // mocked simply to avoid it
+    // mocked to prevent actual behavior
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -51,10 +52,9 @@ class UserControllerTest {
     @Test
     void changeUsernameInfoShouldReturnNotFoundWhenUserIsNotFound() throws Exception {
         var updateUserDto = new ChangeUsernameRequest("newUsername");
-
         doThrow(new UserNotFoundException("User not found")).when(userService).changeUsername(any());
 
-        mockMvc.perform(patch("/api/users/username")
+        mockMvc.perform(patch(USER_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateUserDto)))
                 .andDo(print())
@@ -66,7 +66,7 @@ class UserControllerTest {
     void changeUsernameShouldReturnBadRequestWhenValidationFails() throws Exception {
         var updateUserDto = ChangeUsernameRequest.builder().username("ab").build();
 
-        mockMvc.perform(patch("/api/users/username")
+        mockMvc.perform(patch(USER_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateUserDto)))
                 .andDo(print())
@@ -77,10 +77,9 @@ class UserControllerTest {
     void changeUsernameShouldReturnOkWhenUsernameIsChangedSuccessfully() throws Exception {
         var changeUsernameRequest = new ChangeUsernameRequest("newUsername");
         var updateUserResponseDto = new UpdateUserResponse("Username changed successfully, please log in again with new credentials");
-
         doReturn(updateUserResponseDto).when(userService).changeUsername(any(ChangeUsernameRequest.class));
 
-        mockMvc.perform(patch("/api/users/username")
+        mockMvc.perform(patch(USER_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(changeUsernameRequest)))
                 .andDo(print())

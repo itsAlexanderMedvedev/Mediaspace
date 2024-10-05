@@ -19,6 +19,10 @@ import java.util.concurrent.Callable;
 
 public abstract class AbstractIntegrationTest {
 
+    public static final String AUTHORIZATION_HEADER = "Authorization";
+    public static final String BEARER_PREFIX = "Bearer ";
+    public static final String CLEAR_DB = "TRUNCATE story, comment, post, media, _user RESTART IDENTITY CASCADE";
+
     @Autowired
     protected JdbcTemplate jdbcTemplate;
     

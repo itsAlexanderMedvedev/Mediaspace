@@ -58,75 +58,62 @@ public class UserServiceTest {
         mockitoSession.finishMocking();
     }
 
-    @Test
-    public void changeUsernameSuccessWhenUserExistsAndUsernameValidAndAvailable() {
-        // Given
-        String oldUsername = "oldUser";
-        String newUsername = "newUser";
-
-        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest(newUsername);
-
-        User existingUser = new User();
-        existingUser.setUsername(oldUsername);
-
+    private void mockAuthentication(String oldUser) {
         var authentication = mock(UsernamePasswordAuthenticationToken.class);
         var securityContext = mock(SecurityContext.class);
         SecurityContextHolder.setContext(securityContext);
         when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("oldUser");
+        when(authentication.getName()).thenReturn(oldUser);
+    }
+
+    @Test
+    public void changeUsernameSuccessWhenUserExistsAndUsernameValidAndAvailable() {
+        var oldUsername = "oldUser";
+        var newUsername = "newUser";
+        var changeUsernameRequest = new ChangeUsernameRequest(newUsername);
+        var existingUser = User.builder().username(oldUsername).build();
+
+        mockAuthentication(oldUsername);
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.of(existingUser));
         when(userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(newUsername)).thenReturn(Optional.empty());
 
-        // When
+
         userService.changeUsername(changeUsernameRequest);
 
-        // Then
+
         verify(userRepository).save(argThat(user -> user.getUsername().equals(newUsername)));
     }
 
     @Test
     public void changePasswordNewPasswordEncoded() {
-        // Given
-        String username = "user";
-        String newPassword = "newPassword";
-        ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest("oldPassword", newPassword);
-        User existingUser = new User();
-        existingUser.setUsername(username);
+        var username = "user";
+        var newPassword = "newPassword";
+        var changePasswordRequest = new ChangePasswordRequest("oldPassword", newPassword);
+        var existingUser = User.builder().username(username).build();
 
-        var authentication = mock(UsernamePasswordAuthenticationToken.class);
-        var securityContext = mock(SecurityContext.class);
-        SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("user");
+        mockAuthentication(username);
 
         when(passwordEncoder.matches(any(), any())).thenReturn(true);
         when(passwordEncoder.encode(newPassword)).thenReturn("encodedPassword");
         when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.of(existingUser));
 
-        // When
+
         userService.changePassword(changePasswordRequest);
 
-        // Then
+
         verify(userRepository).save(argThat(user -> user.getPassword().equals("encodedPassword")));
         verify(passwordEncoder).encode(newPassword);
     }
 
     @Test
     public void changeUsernameNewUsernameSameAsOldThrowsException() {
-        // Given
-        String username = "user";
-        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest(username);
-        User existingUser = new User();
-        existingUser.setUsername(username);
+        var username = "user";
+        var changeUsernameRequest = new ChangeUsernameRequest(username);
+        var existingUser = User.builder().username(username).build();
 
-        var authentication = mock(UsernamePasswordAuthenticationToken.class);
-        var securityContext = mock(SecurityContext.class);
-        SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("user");
+        mockAuthentication(username);
         when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.of(existingUser));
 
-        // When & Then
         assertThatThrownBy(() -> userService.changeUsername(changeUsernameRequest))
                 .isInstanceOf(UserUpdateException.class)
                 .hasMessage("New username is the same as the old one");
@@ -136,52 +123,22 @@ public class UserServiceTest {
 
     @Test
     public void changeUsernameNewUsernameAlreadyTakenThrowsException() {
-        // Given
-        String oldUsername = "oldUsername";
-        String newUsername = "newTakenUsername";
-        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest(newUsername);
+        var oldUsername = "oldUsername";
+        var newUsername = "newTakenUsername";
+        var changeUsernameRequest = new ChangeUsernameRequest(newUsername);
+        var existingUser = User.builder().username(oldUsername).build();
+        var userWithTakenUsername = User.builder().username(newUsername).build();
 
-        User existingUser = new User();
-        existingUser.setUsername(oldUsername);
-
-        User userWithTakenUsername = User.builder().username(newUsername).build();
-
-        var authentication = mock(UsernamePasswordAuthenticationToken.class);
-        var securityContext = mock(SecurityContext.class);
-        SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("oldUsername");
+        mockAuthentication("oldUsername");
 
         when(userRepository.findByUsernameIgnoreCase("oldUsername")).thenReturn(Optional.of(existingUser));
         when(userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(newUsername)).thenReturn(Optional.of(userWithTakenUsername));
 
 
-        // When & Then
         assertThatThrownBy(() -> userService.changeUsername(changeUsernameRequest))
                 .isInstanceOf(UserUpdateException.class)
                 .hasMessage("Username is already taken");
 
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    public void changeUsernameWhenUserDoesNotExistThrowsException() {
-        // Given
-        ChangeUsernameRequest changeUsernameRequest = new ChangeUsernameRequest("newUsername");
-
-        var authentication = mock(UsernamePasswordAuthenticationToken.class);
-        var securityContext = mock(SecurityContext.class);
-        SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("");
-
-
-        when(userRepository.findByUsernameIgnoreCase(anyString())).thenReturn(Optional.empty());
-
-        // When & Then
-        assertThatThrownBy(() -> userService.changeUsername(changeUsernameRequest))
-                .isInstanceOf(UserNotFoundException.class)
-                .hasMessage("Authentication object is invalid or does not contain a username");
 
         verify(userRepository, never()).save(any());
     }

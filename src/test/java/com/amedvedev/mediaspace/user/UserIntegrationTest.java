@@ -31,6 +31,12 @@ import static org.hamcrest.Matchers.equalTo;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class UserIntegrationTest extends AbstractIntegrationTest {
 
+    public static final String USERS_ENDPOINT = "/api/users";
+    public static final String ME_ENDPOINT = "/me";
+    public static final String FOLLOW_ENDPOINT = "/{username}/follow";
+    public static final String USERNAME_ENDPOINT = "/username";
+    public static final String PASSWORD_ENDPOINT = "/password";
+    public static final String RESTORE_ENDPOINT = "/restore";
     @LocalServerPort
     private Integer port;
 
@@ -50,9 +56,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        RestAssured.basePath = "/api/users";
+        RestAssured.basePath = USERS_ENDPOINT;
 
-        jdbcTemplate.execute("TRUNCATE post, media, post_media, _user RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute(CLEAR_DB);
 
         user = userRepository.save(User.builder().username("user").password(passwordEncoder.encode("password")).build());
         token = jwtService.generateToken(user);
@@ -71,7 +77,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     void shouldNotAccessProtectedEndpointWithoutToken() {
         given()
                 .when()
-                .get("/me")
+                .get(ME_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Full authentication is required to access this resource"));
@@ -80,9 +86,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotAccessProtectedEndpointWithInvalidToken() {
         given()
-                .header("Authorization", "Bearer invalid-token")
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + "invalid-token")
                 .when()
-                .get("/me")
+                .get(ME_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Malformed JWT"));
@@ -91,9 +97,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldReturnCurrentUser() {
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .get("/me")
+                .get(ME_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("username", equalTo(user.getUsername()));
@@ -105,9 +111,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         var userToFollow = createUser("user-to-follow");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .post("/{username}/follow", userToFollow.getUsername())
+                .post(FOLLOW_ENDPOINT, userToFollow.getUsername())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
@@ -123,16 +129,16 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         var userToFollow = createUser("user-to-follow");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .post("/{username}/follow", userToFollow.getUsername())
+                .post(FOLLOW_ENDPOINT, userToFollow.getUsername())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .post("/{username}/follow", userToFollow.getUsername())
+                .post(FOLLOW_ENDPOINT, userToFollow.getUsername())
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -142,9 +148,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotFollowNotExistingUser() {
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .post("/{username}/follow", "non-existing-username")
+                .post(FOLLOW_ENDPOINT, "non-existing-username")
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("User not found"));
@@ -156,16 +162,16 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         var userToUnfollow = createUser("user-to-unfollow");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .post("/{username}/follow", userToUnfollow.getUsername())
+                .post(FOLLOW_ENDPOINT, userToUnfollow.getUsername())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{username}/follow", userToUnfollow.getUsername())
+                .delete(FOLLOW_ENDPOINT, userToUnfollow.getUsername())
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
@@ -185,9 +191,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         var userToUnfollow = createUser("user-to-unfollow");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{username}/follow", userToUnfollow.getUsername())
+                .delete(FOLLOW_ENDPOINT, userToUnfollow.getUsername())
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("Cannot unfollow user that is not followed"));
@@ -196,9 +202,9 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotUnfollowNotExistingUser() {
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{username}/follow", "non-existing-username")
+                .delete(FOLLOW_ENDPOINT, "non-existing-username")
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("User not found"));
@@ -210,10 +216,10 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(changeUsernameRequest)
                 .when()
-                .patch("/username")
+                .patch(USERNAME_ENDPOINT)
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value());
@@ -226,11 +232,11 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(changeUsernameRequest)
                 .log().all()
                 .when()
-                .patch("/username")
+                .patch(USERNAME_ENDPOINT)
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -259,10 +265,10 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(changePasswordRequest)
                 .when()
-                .patch("/password")
+                .patch(PASSWORD_ENDPOINT)
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value());
@@ -273,10 +279,10 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     void shouldNotChangePasswordNotMatchingPattern(ChangePasswordRequest changeUsernameRequest, String expectedErrorMessage) {
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(changeUsernameRequest)
                 .when()
-                .patch("/password")
+                .patch(PASSWORD_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("errors.password", equalTo(expectedErrorMessage));
@@ -301,10 +307,10 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(changeUserRequest)
                 .when()
-                .patch("/username")
+                .patch(USERNAME_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("New username is the same as the old one"));
@@ -317,10 +323,10 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(changeUserRequest)
                 .when()
-                .patch("/username")
+                .patch(USERNAME_ENDPOINT)
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -330,7 +336,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldDeleteUser() {
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
                 .delete()
                 .then()
@@ -340,16 +346,16 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldNotAllowDeletedUsersEvenWithToken() {
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
                 .delete()
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .get("/me")
+                .get(ME_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Your account is deleted. If you want to restore it - use /api/users/restore endpoint."));
@@ -360,19 +366,20 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         var loginRequest = LoginRequest.builder().username("user").password("password").build();
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
                 .delete()
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
+        var loginEndpoint = RestAssured.baseURI + ":" + port + "/api/auth/login";
         given()
                 .contentType(ContentType.JSON)
                 .body(loginRequest)
                 .log().all()
                 .when()
-                .post(RestAssured.baseURI + ":" + port + "/api/auth/login")
+                .post(loginEndpoint)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .log().all()
@@ -384,7 +391,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         var restoreUserRequest = RestoreUserRequest.builder().username("user").password("password").build();
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
                 .delete()
                 .then()
@@ -395,7 +402,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(restoreUserRequest)
                 .when()
-                .put("/restore")
+                .put(RESTORE_ENDPOINT)
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
@@ -407,7 +414,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         given()
                 .contentType(ContentType.JSON)
                 .when()
-                .put("/restore")
+                .put(RESTORE_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("Required request body is missing or malformed"));
@@ -418,7 +425,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         given()
                 .contentType(ContentType.JSON)
                 .when()
-                .patch("/restore")
+                .patch(RESTORE_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.METHOD_NOT_ALLOWED.value())
                 .body("reason", equalTo("Request method 'PATCH' is not supported"));
@@ -432,7 +439,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(restoreUserRequest)
                 .when()
-                .put("/restore")
+                .put(RESTORE_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("User is not deleted"));
@@ -443,7 +450,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         var restoreUserRequest = RestoreUserRequest.builder().username("user").password("wrong-password").build();
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
                 .delete()
                 .then()
@@ -454,7 +461,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(restoreUserRequest)
                 .when()
-                .put("/restore")
+                .put(RESTORE_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .body("reason", equalTo("Bad credentials"));
@@ -468,7 +475,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(restoreUserRequest)
                 .when()
-                .put("/restore")
+                .put(RESTORE_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("User not found"));

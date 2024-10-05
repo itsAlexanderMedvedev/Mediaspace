@@ -6,7 +6,6 @@ import com.amedvedev.mediaspace.post.PostMapper;
 import com.amedvedev.mediaspace.post.PostRepository;
 import com.amedvedev.mediaspace.post.comment.dto.AddCommentRequest;
 import com.amedvedev.mediaspace.post.comment.dto.EditCommentRequest;
-import com.amedvedev.mediaspace.post.comment.dto.ViewCommentResponse;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.User;
@@ -20,16 +19,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.test.context.transaction.TestTransaction;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +29,11 @@ import static org.hamcrest.Matchers.equalTo;
 @Transactional
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class CommentIntegrationTest extends AbstractIntegrationTest {
+
+    public static final String COMMENTS_ENDPOINT = "/api/comments";
+    public static final String POST_ID_ENDPOINT = "/posts/{postId}";
+    public static final String COMMENT_ID_ENDPOINT = "/{commentId}";
+
 
     @LocalServerPort
     private Integer port;
@@ -67,10 +63,10 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        RestAssured.basePath = "/api/comments";
+        RestAssured.basePath = COMMENTS_ENDPOINT;
 
         executeInsideTransaction(() -> {
-            jdbcTemplate.execute("TRUNCATE comment, post, _user RESTART IDENTITY CASCADE");
+            jdbcTemplate.execute(CLEAR_DB);
 
             user = createUser("user");
             post = createPost(user, "title", "description");
@@ -100,7 +96,7 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         });
     }
 
-    private void addCommentToPost(User user, Post post, String... bodies) {
+    private void addCommentsToPost(User user, Post post, String... bodies) {
         executeInsideTransaction(() -> {
             for (String body : bodies) {
                 var comment = Comment.builder()
@@ -139,12 +135,12 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
                 .log().all()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -159,11 +155,11 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(400);
+                .statusCode(HttpStatus.BAD_REQUEST.value());
 
         var targetedPost = postRepository.findById(post.getId()).orElseThrow();
         assertThat(targetedPost.getComments()).isEmpty();
@@ -171,18 +167,18 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldCreateNestedComments() {
-        addCommentToPost(user, post, "text");
-
+        addCommentsToPost(user, post, "text");
         var commentRequest = AddCommentRequest.builder().body("nested text").build();
+        var commentId = 1;
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/{commentId}", 1)
+                .post(COMMENT_ID_ENDPOINT, commentId)
                 .then()
                 .log().all()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -199,21 +195,21 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/{commentId}", 1)
+                .post(COMMENT_ID_ENDPOINT, 1)
                 .then()
-                .statusCode(404);
+                .statusCode(HttpStatus.NOT_FOUND.value());
     }
 
     @Test
     void shouldViewComments() {
-        addCommentToPost(user, post, "text", "text2");
+        addCommentsToPost(user, post, "text", "text2");
 
         var response = given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
-                .get("/posts/{postId}", post.getId())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(POST_ID_ENDPOINT, post.getId())
                 .then()
                 .log().all()
                 .statusCode(200)
@@ -221,7 +217,7 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
                 .as(ViewPostCommentsResponse.class);
 
 
-        var comment1 = response.getComments().get(0);
+        var comment1 = response.getComments().getFirst();
         var comment2 = response.getComments().get(1);
 
         assertThat(response.getComments().size()).isEqualTo(2);
@@ -237,37 +233,37 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldNotViewCommentsIfPostDoesNotExist() {
-        System.out.println("FROM TEST " + commentRepository.findAll());
+        var notExistingPostId = 2;
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
-                .get("/posts/{postId}", 2)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(POST_ID_ENDPOINT, notExistingPostId)
                 .then()
-                .statusCode(404);
+                .statusCode(HttpStatus.NOT_FOUND.value());
     }
 
     @Test
     void shouldNotViewCommentsIfUserIsNotAuthenticated() {
-        addCommentToPost(user, post, "text", "text2");
+        addCommentsToPost(user, post, "text", "text2");
 
         given()
                 .contentType(ContentType.JSON)
-                .get("/posts/{postId}", post.getId())
+                .get(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(401);
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
 
     @Test
     void shouldViewNestedComments() {
-        addCommentToPost(user, post, "text");
+        addCommentsToPost(user, post, "text");
         addNestedCommentToComment(user, 1L, "nested text");
 
         var response = given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
-                .get("/posts/{postId}", post.getId())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(200)
+                .statusCode(HttpStatus.OK.value())
                 .extract()
                 .as(ViewPostCommentsResponse.class);
 
@@ -287,14 +283,14 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldNotViewNestedCommentsIfCommentDoesNotExist() {
-        addCommentToPost(user, post, "text");
+        addCommentsToPost(user, post, "text");
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
-                .get("/posts/{postId}", post.getId())
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(200)
+                .statusCode(HttpStatus.OK.value())
                 .body("comments.size()", equalTo(1))
                 .body("comments[0].nestedComments.size()", equalTo(0));
     }
@@ -305,22 +301,22 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var updatedCommentRequest = EditCommentRequest.builder().updatedBody("new text").build();
         var commentId = 1;
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(updatedCommentRequest)
-                .patch("/{commentId}", commentId)
+                .patch(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(200);
+                .statusCode(HttpStatus.OK.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -335,22 +331,22 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var updatedCommentRequest = EditCommentRequest.builder().updatedBody(newBody).build();
         var commentId = 1;
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(updatedCommentRequest)
-                .patch("/{commentId}", commentId)
+                .patch(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(400);
+                .statusCode(HttpStatus.BAD_REQUEST.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -374,9 +370,9 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(401);
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         assertThat(updatedPost.getComments()).isEmpty();
@@ -388,11 +384,11 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var updatedCommentRequest = EditCommentRequest.builder().updatedBody("new text").build();
         var commentId = 1;
@@ -400,9 +396,9 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedCommentRequest)
-                .patch("/{commentId}", commentId)
+                .patch(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(401);
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -416,11 +412,11 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", 2)
+                .post(POST_ID_ENDPOINT, 2)
                 .then()
-                .statusCode(404)
+                .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Post not found"));;
     }
 
@@ -431,16 +427,16 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(updatedCommentRequest)
-                .patch("/{commentId}", commentId)
+                .patch(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(404);
+                .statusCode(HttpStatus.NOT_FOUND.value());
     }
 
     @Test
     void shouldNotEditCommentsOfOtherUsers() {
-        addCommentToPost(user, post, "text");
+        addCommentsToPost(user, post, "text");
         var commentId = 1;
 
         var anotherUser = createUser("anotherUser");
@@ -452,11 +448,11 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + anotherToken)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + anotherToken)
                 .body(editCommentRequest)
-                .patch("/{commentId}", commentId)
+                .patch(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(403);
+                .statusCode(HttpStatus.FORBIDDEN.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -471,11 +467,11 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var updatedCommentRequest = EditCommentRequest.builder().updatedBody("new text").build();
         var commentId = 1;
@@ -483,9 +479,9 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(updatedCommentRequest)
-                .patch("/{commentId}", commentId)
+                .patch(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(401);
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -499,20 +495,20 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var commentId = 1;
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
-                .delete("/{commentId}", commentId)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .delete(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(204);
+                .statusCode(HttpStatus.NO_CONTENT.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         assertThat(updatedPost.getComments()).isEmpty();
@@ -524,19 +520,19 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(commentRequest)
-                .post("/posts/{postId}", post.getId())
+                .post(POST_ID_ENDPOINT, post.getId())
                 .then()
-                .statusCode(201);
+                .statusCode(HttpStatus.CREATED.value());
 
         var commentId = 1;
 
         given()
                 .contentType(ContentType.JSON)
-                .delete("/{commentId}", commentId)
+                .delete(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(401);
+                .statusCode(HttpStatus.UNAUTHORIZED.value());
 
         var updatedPost = postRepository.findById(post.getId()).orElseThrow();
         var comments = updatedPost.getComments();
@@ -550,9 +546,9 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + token)
-                .delete("/{commentId}", commentId)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .delete(COMMENT_ID_ENDPOINT, commentId)
                 .then()
-                .statusCode(404);
+                .statusCode(HttpStatus.NOT_FOUND.value());
     }
 }

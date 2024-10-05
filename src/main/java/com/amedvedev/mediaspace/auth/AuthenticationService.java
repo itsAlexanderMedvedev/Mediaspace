@@ -40,7 +40,7 @@ public class AuthenticationService {
     }
 
     private void verifyUsernameIsFree(RegisterRequest request) {
-        if (userService.isUsernameFree(request.getUsername())) {
+        if (!userService.isUsernameFree(request.getUsername())) {
             log.warn("Username already exists: {}", request.getUsername());
             throw new UsernameAlreadyExistsException("This username is already taken");
         }

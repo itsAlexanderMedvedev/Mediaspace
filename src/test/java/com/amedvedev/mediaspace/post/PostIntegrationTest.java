@@ -22,9 +22,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.hibernate.Session;
-import org.hibernate.engine.spi.PersistenceContext;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +40,11 @@ import static org.hamcrest.Matchers.equalTo;
 @Transactional
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class PostIntegrationTest extends AbstractIntegrationTest {
+
+    public static final String POSTS_ENDPOINT = "/api/posts";
+    public static final String USER_BY_USERNAME_ENDPOINT = "/user/{username}";
+    public static final String ID_ENDPOINT = "/{id}";
+    public static final String LIKE_ENDPOINT = "/{id}/like";
 
     @LocalServerPort
     private Integer port;
@@ -69,10 +71,10 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-        RestAssured.basePath = "/api/posts";
+        RestAssured.basePath = POSTS_ENDPOINT;
 
         executeInsideTransaction(() -> {
-            jdbcTemplate.execute("TRUNCATE post, media, _user RESTART IDENTITY CASCADE");
+            jdbcTemplate.execute(CLEAR_DB);
             user = createUser("user");
             return null;
         });
@@ -181,7 +183,7 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         var expectedViewPostResponse = getViewPostResponseExpected("Title", "Hello, World!", 1L, new Long[]{1L, 2L});
 
         var actualViewPostResponse = given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .contentType(ContentType.JSON)
                 .body(createPostRequest)
                 .when()
@@ -201,9 +203,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         createPost("Title2", "Hello, World!");
 
         var actualPostsList = given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .get("/user/{username}", "user")
+                .get(USER_BY_USERNAME_ENDPOINT, "user")
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .extract().jsonPath().getList(".", UserProfilePostResponse.class);
@@ -218,9 +220,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         createPost("Title1", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .get("/user/{username}", "invalid-username")
+                .get(USER_BY_USERNAME_ENDPOINT, "invalid-username")
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("User not found"));
@@ -233,9 +235,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         var expectedViewPostResponse = getViewPostResponseExpected("Title", "Hello, World!", 1L, new Long[]{1L, 2L});
 
         var actualViewPostResponse = given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .get("/{id}", 1)
+                .get(ID_ENDPOINT, 1)
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .extract().jsonPath().getObject(".", ViewPostResponse.class);
@@ -250,9 +252,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         createPost("Title", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .get("/{id}", 2)
+                .get(ID_ENDPOINT, 2)
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Post not found"));
@@ -263,9 +265,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         var post = createPost("Title", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .put("/{id}/like", post.getId())
+                .put(LIKE_ENDPOINT, post.getId())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
@@ -284,9 +286,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         createPost("Title", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .put("/{id}/like", 2)
+                .put(LIKE_ENDPOINT, 2)
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Post not found"));
@@ -297,16 +299,16 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         var post = createPost("Title", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .put("/{id}/like", post.getId())
+                .put(LIKE_ENDPOINT, post.getId())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{id}/like", post.getId())
+                .delete(LIKE_ENDPOINT, post.getId())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
@@ -320,9 +322,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         createPost("Title", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{id}/like", 2)
+                .delete(LIKE_ENDPOINT, 2)
                 .then()
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .body("reason", equalTo("Post not found"));
@@ -333,9 +335,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         var post = createPost("Title", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{id}/like", post.getId())
+                .delete(LIKE_ENDPOINT, post.getId())
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .body("reason", equalTo("Cannot unlike post that was not liked"));
@@ -346,9 +348,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         createPost("Title", "Hello, World!");
 
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{id}", 1)
+                .delete(ID_ENDPOINT, 1)
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
     }
@@ -359,25 +361,20 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         var comments = List.of("Comment1", "Comment2", "Comment3");
         post = addCommentsToPost(post, comments);
 
-        var mediaList = postMediaRepository.findAllByPostId(post.getId()).stream()
-                .map(PostMedia::getMedia)
-                .toList();
-
-        System.out.println("POSTS: " + postRepository.findAll());
-
         given()
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .when()
-                .delete("/{id}", post.getId())
+                .delete(ID_ENDPOINT, post.getId())
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
+
 
         // TODO: look into that
         entityManager.flush();
         entityManager.clear();
 
         assertThat(postRepository.findById(post.getId())).isEmpty();
-        assertThat(postMediaRepository.findAllByPostId(post.getId())).isEmpty();
-        assertThat(mediaRepository.findAllById(mediaList.stream().map(Media::getId).toList())).isEmpty();
+        assertThat(postMediaRepository.findAll()).isEmpty();
+        assertThat(mediaRepository.findAll()).isEmpty();
     }
 }
