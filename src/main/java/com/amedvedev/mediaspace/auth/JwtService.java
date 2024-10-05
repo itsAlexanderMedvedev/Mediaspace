@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+@Slf4j
 @Service
 public class JwtService {
 
@@ -49,15 +51,18 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
+        log.info("Generating token for user: {}", userDetails.getUsername());
         return generateToken(new HashMap<>(), userDetails, defaultTokenExpiration);
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
+        log.debug("Verifying token");
         final String username = extractUsername(token);
         return Objects.equals(username, userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     public String extractUsername(String token) {
+        log.debug("Extracting username from token");
         return extractClaim(token, Claims::getSubject);
     }
 

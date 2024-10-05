@@ -27,7 +27,7 @@ public class UserService {
 
     public User getCurrentUser() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.debug("Attempting to retrieve user from token directly from database with username: {}", username);
+        log.debug("Retrieving user from token directly from database with username: {}", username);
 
         return userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
@@ -40,10 +40,12 @@ public class UserService {
     }
 
     public UserDto getUserDtoByUsername(String username) {
+        log.debug("Getting user dto by username: {}", username);
         return getUserDtoFromCacheOrDb(username);
     }
 
     public User findUserByUsername(String username) {
+        log.debug("Fetching user by username from database with username: {}", username);
         return userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
@@ -63,8 +65,6 @@ public class UserService {
         userRepository.save(follower);
         userRedisService.cacheUser(follower);
         userRedisService.cacheUser(followee);
-
-        log.info("User {} successfully followed user {}", follower.getUsername(), followee.getUsername());
     }
 
     private void verifyUserIsNotAlreadyFollowed(User follower, User followee) {
@@ -96,8 +96,6 @@ public class UserService {
         userRepository.save(follower);
         userRedisService.cacheUser(follower);
         userRedisService.cacheUser(followee);
-
-        log.info("User {} successfully unfollowed user {}", follower.getUsername(), followee.getUsername());
     }
 
     private void verifyUserIsFollowed(User follower, User followee) {
@@ -118,14 +116,12 @@ public class UserService {
     public UpdateUserResponse changeUsername(ChangeUsernameRequest changeUsernameRequest) {
         var user = getCurrentUser();
         var newUsername = changeUsernameRequest.getUsername();
-
-        log.debug("User {} is attempting to change username to {}", user.getUsername(), newUsername);
+        log.info("User {} is attempting to change username to {}", user.getUsername(), newUsername);
 
         verifyNewUsernameIsDifferent(newUsername, user);
         verifyNewUsernameIsFree(newUsername, user);
 
         user.setUsername(newUsername);
-
         userRepository.save(user);
         cacheUserAndIdMapping(user);
 
@@ -232,18 +228,26 @@ public class UserService {
         }
     }
 
-    private boolean isUsernameFree(String username) {
-        return findByUsernameIgnoreCaseAndIncludeSoftDeleted(username).isEmpty();
+    public boolean isUsernameFree(String username) {
+        return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username).isEmpty();
     }
 
-    public Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
-        return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username);
+    public User findByUsernameIgnoreCaseAndIncludeSoftDeleted(String username) {
+        log.info("Fetching user by username including soft deleted with username: {}", username);
+        return userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(username).orElseThrow(() -> {
+                    log.warn("User not found with username: {}", username);
+                    return new UserNotFoundException("User not found");
+                }
+        );
     }
 
     private UserDto getUserDtoFromCacheOrDb(String username) {
         return userRedisService.getCachedUserIdByUsername(username)
             .flatMap(userRedisService::getCachedUserById)
-            .orElseGet(() -> getAndCacheUserDtoByUsername(username));
+            .orElseGet(() -> {
+                log.debug("User with username: {} not found in cache", username);
+                return getAndCacheUserDtoByUsername(username);
+            });
     }
 
     private UserDto getAndCacheUserDtoByUsername(String username) {
@@ -253,7 +257,6 @@ public class UserService {
 
     private UserDto cacheAndReturnUserDto(User user) {
         userRedisService.cacheUser(user);
-        log.debug("Cached and retrieved user with username: {}", user.getUsername());
         return userMapper.toUserDto(user);
     }
 

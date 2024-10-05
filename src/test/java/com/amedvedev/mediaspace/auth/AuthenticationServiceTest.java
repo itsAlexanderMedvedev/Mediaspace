@@ -3,6 +3,7 @@ package com.amedvedev.mediaspace.auth;
 import com.amedvedev.mediaspace.auth.dto.LoginRequest;
 import com.amedvedev.mediaspace.auth.dto.LoginResponse;
 import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
+import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserService;
@@ -64,7 +65,7 @@ class AuthenticationServiceTest {
 
 
         Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
-                .thenReturn(Optional.empty());
+                .thenThrow(UserNotFoundException.class);
         Mockito.when(passwordEncoder.encode(request.getPassword()))
                 .thenReturn("encoded-password");
 
@@ -83,7 +84,7 @@ class AuthenticationServiceTest {
 
 
         Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
-                .thenReturn(Optional.of(new User()));
+                .thenReturn(new User());
 
 
         assertThrows(UsernameAlreadyExistsException.class,
@@ -112,14 +113,7 @@ class AuthenticationServiceTest {
         Mockito.when(authenticationManager.authenticate(Mockito.any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken("username", "password"));
         Mockito.when(userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()))
-                .thenReturn(
-                        Optional.of(
-                                User.builder()
-                                        .username(request.getUsername())
-                                        .password("encoded-password")
-                                        .build()
-                        )
-                );
+                .thenReturn(User.builder().username(request.getUsername()).password("encoded-password").build());
         Mockito.when(jwtService.generateToken(Mockito.any(User.class)))
                 .thenReturn("mock-token");
 

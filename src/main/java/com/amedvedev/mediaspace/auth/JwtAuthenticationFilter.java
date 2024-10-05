@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        var authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer")) {
             log.debug("Request without JWT");
             filterChain.doFilter(request, response);
@@ -54,7 +54,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
             if (jwtService.isTokenValid(jwt, userDetails)) {
-                log.debug("Token is valid");
                 setSecurityContext(request, userDetails);
             }
         }
@@ -62,6 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void setSecurityContext(HttpServletRequest request, UserDetails userDetails) {
+        log.debug("Setting security context");
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
                 userDetails,
                 null,
@@ -72,8 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private UserDetails getUserDetails(String username) {
+        log.debug("Getting user details for: {}", username);
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        log.debug("User details loaded");
         if (!userDetails.isEnabled()) {
             log.warn("User is disabled");
             throw new DisabledException("Your account is deleted. If you want to restore it - use /api/users/restore endpoint.");

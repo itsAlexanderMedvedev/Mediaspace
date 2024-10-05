@@ -51,7 +51,7 @@ public class UserProfileService {
     }
 
     private List<UserProfilePostResponse> getPosts(Long id) {
-        var posts = postService.getPostsByUserId(id);
+        var posts = postService.findPostsByUserId(id);
         return posts.stream()
                 .map(postMapper::toUserProfilePostResponse)
                 .toList();

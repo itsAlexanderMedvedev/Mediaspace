@@ -112,6 +112,7 @@ public class StoryService {
         var user = userService.getCurrentUser();
         var stories = redisService.getCachedStoriesFeedForUser(user.getId());
 
+//        StoryMapper
         if (stories.isEmpty()) {
             log.debug("No stories feed found in cache for user with id: {}", user.getId());
             log.debug("Retrieving stories feed from database for user with id: {}", user.getId());

@@ -1,11 +1,6 @@
 package com.amedvedev.mediaspace.post;
 
-import com.amedvedev.mediaspace.media.Media;
-import com.amedvedev.mediaspace.media.dto.CreateMediaRequest;
-import com.amedvedev.mediaspace.media.postmedia.PostMedia;
-import com.amedvedev.mediaspace.media.postmedia.PostMediaId;
-import com.amedvedev.mediaspace.post.comment.CommentService;
-import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
+import com.amedvedev.mediaspace.media.postmedia.PostMediaMapper;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
 import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.post.dto.ViewPostResponse;
@@ -17,23 +12,27 @@ import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserService;
 import com.amedvedev.mediaspace.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.IntStream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostService {
 
     private final UserService userService;
-    private final PostMapper postMapper;
     private final PostRepository postRepository;
+    private final PostMapper postMapper;
+    private final PostMediaMapper postMediaMapper;
 
     @Transactional
     public ViewPostResponse createPost(CreatePostRequest request) {
         var user = userService.getCurrentUser();
+        log.info("Creating post for user: {}", user.getUsername());
+
         var post = buildPost(request, user);
 
         var savedPost = postRepository.save(post);
@@ -41,27 +40,17 @@ public class PostService {
     }
 
     private Post buildPost(CreatePostRequest request, User user) {
+        log.debug("Building post from request: {}", request);
         var post = Post.builder()
                 .user(user)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .build();
 
-        var postMediaList = mapUrlsToPostMedia(request.getMediaUrls(), post);
+        var postMediaList = postMediaMapper.mapUrlsToPostMedia(request.getMediaUrls(), post);
         post.setPostMediaList(postMediaList);
 
         return post;
-    }
-
-    private List<PostMedia> mapUrlsToPostMedia(List<CreateMediaRequest> createMediaRequests, Post post) {
-        return IntStream.range(0, createMediaRequests.size())
-                .mapToObj(index -> {
-                    var url = createMediaRequests.get(index).getUrl();
-                    var media = Media.builder().url(url).build();
-                    var mediaPostId = new PostMediaId(media.getId(), index + 1);
-                    return new PostMedia(mediaPostId, media, post);
-                })
-                .toList();
     }
 
     public Post savePost(Post post) {
@@ -70,40 +59,46 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public List<UserProfilePostResponse> getPostsOfUser(String username) {
+        log.info("Fetching posts of user: {}", username);
         var user = userService.getUserDtoByUsername(username);
         return getUserProfilePostResponses(user);
     }
 
     private List<UserProfilePostResponse> getUserProfilePostResponses(UserDto user) {
-        return getPostsByUserId(user.getId()).stream()
+        return findPostsByUserId(user.getId()).stream()
                 .map(postMapper::toUserProfilePostResponse)
                 .toList();
     }
 
-    public List<Post> getPostsByUserId(Long id) {
+    public List<Post> findPostsByUserId(Long id) {
         return postRepository.findAllByUserIdOrderByCreatedAt(id);
     }
 
     @Transactional(readOnly = true)
     public ViewPostResponse getViewPostResponseById(Long id) {
-        var post = getPostById(id);
+        log.info("Getting ViewPostResponse for post with id: {}", id);
+        var post = findPostById(id);
         return postMapper.toViewPostResponse(post);
     }
 
-    public Post getPostById(Long id) {
+    public Post findPostById(Long id) {
+        log.info("Fetching post by id: {}", id);
         return postRepository.findById(id)
                 .orElseThrow(() -> new PostNotFoundException("Post not found"));
     }
 
     @Transactional
     public void deletePostById(Long id) {
+        log.info("Deleting post with id: {}", id);
         postRepository.deleteById(id);
     }
 
     @Transactional
     public void likePost(Long postId) {
-        var post = getPostById(postId);
+        var post = findPostById(postId);
         var user = userService.getCurrentUser();
+
+        log.info("User: {} is liking post with id: {}", postId, user.getUsername());
 
         post.addLike(buildLike(postId, user));
 
@@ -116,14 +111,20 @@ public class PostService {
 
     @Transactional
     public void unlikePost(Long postId) {
-        var post = getPostById(postId);
+        var post = findPostById(postId);
         var user = userService.getCurrentUser();
-        var removed = post.getLikes().removeIf(like -> like.getUser().getId().equals(user.getId()));
+        log.info("User: {} is unliking post with id: {}", postId, user.getUsername());
 
-        if (!removed) {
-            throw new PostNotLikedException("Cannot unlike post that was not liked");
-        }
+        removeLike(post, user);
 
         postRepository.save(post);
+    }
+
+    private void removeLike(Post post, User user) {
+        var removed = post.getLikes().removeIf(like -> like.getUser().getId().equals(user.getId()));
+        if (!removed) {
+            log.warn("User: {} tried to unlike post that was not liked", user.getUsername());
+            throw new PostNotLikedException("Cannot unlike post that was not liked");
+        }
     }
 }

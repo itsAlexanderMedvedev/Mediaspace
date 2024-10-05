@@ -9,11 +9,13 @@ import com.amedvedev.mediaspace.user.UserService;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -24,30 +26,36 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     public RegisterResponse register(RegisterRequest request) {
+        log.info("Registering user: {}", request.getUsername());
 
-        if (userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername()).isPresent()) {
-            throw new UsernameAlreadyExistsException("This username is already taken");
-        }
+        verifyUsernameIsFree(request);
 
-        User user = User.builder()
+        var user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
-
         userService.save(user);
 
         return new RegisterResponse("User registered successfully");
     }
 
+    private void verifyUsernameIsFree(RegisterRequest request) {
+        if (userService.isUsernameFree(request.getUsername())) {
+            log.warn("Username already exists: {}", request.getUsername());
+            throw new UsernameAlreadyExistsException("This username is already taken");
+        }
+    }
+
     public LoginResponse login(LoginRequest request) {
+        log.info("Logging in user: {}", request.getUsername());
+
         // Throws BadCredentialsException or InternalAuthenticationServiceException if authentication fails
         // (Handled by GlobalExceptionHandler)
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-        User user = userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        var user = userService.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername());
 
         var token = jwtService.generateToken(user);
         return new LoginResponse(token);
