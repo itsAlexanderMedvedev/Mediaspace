@@ -29,13 +29,13 @@ public class UserProfileService {
 
     @Transactional(readOnly = true)
     public ViewUserProfileResponse getCurrentUserProfile() {
-        log.debug("Returning profile of current user");
+        log.info("Fetching current user's profile");
         return getUserProfileForUserDto(userService.getCurrentUserDto());
     }
 
     @Transactional(readOnly = true)
     public ViewUserProfileResponse getUserProfile(String username) {
-        log.debug("Returning profile of user with username: {}", username);
+        log.info("Fetching profile of user with username: {}", username);
         return getUserProfileForUserDto(userService.getUserDtoByUsername(username));
     }
 
@@ -46,7 +46,7 @@ public class UserProfileService {
         var stories = getStoriesIds(userDto.getId());
         long followersCount = userRepository.countFollowersByUserId(userDto.getId());
         long followingCount = userRepository.countFollowingByUserId(userDto.getId());
-        log.debug("Returning profile of user from dto with username: {}", userDto.getUsername());
+        log.debug("Fetching profile of user from dto with username: {}", userDto.getUsername());
         return userMapper.toViewUserProfileResponse(userDto, posts, stories, followersCount, followingCount);
     }
 

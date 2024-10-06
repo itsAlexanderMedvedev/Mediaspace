@@ -61,7 +61,18 @@ public class PostService {
     public List<UserProfilePostResponse> getPostsOfUser(String username) {
         log.info("Fetching posts of user: {}", username);
         var user = userService.getUserDtoByUsername(username);
-        return getUserProfilePostResponses(user);
+        var userProfilePostResponses = getUserProfilePostResponses(user);
+
+        checkIfUserHasPosts(username, userProfilePostResponses);
+
+        return userProfilePostResponses;
+    }
+
+    private void checkIfUserHasPosts(String username, List<UserProfilePostResponse> userProfilePostResponses) {
+        if (userProfilePostResponses.isEmpty()) {
+            log.warn("User: {} has no posts", username);
+            throw new PostNotFoundException("User has no posts");
+        }
     }
 
     private List<UserProfilePostResponse> getUserProfilePostResponses(UserDto user) {

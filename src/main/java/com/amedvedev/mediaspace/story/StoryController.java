@@ -88,6 +88,10 @@ public class StoryController {
         return storyService.getStoriesOfUser(username);
     }
 
+    public List<ViewStoryResponse> getStoriesOfCurrentUser() {
+        return storyService.getCurrentUserStories();
+    }
+
     @Operation(summary = "Delete a story")
     @ApiResponses(value = {
             @ApiResponse(

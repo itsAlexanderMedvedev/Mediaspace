@@ -8,14 +8,12 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
-import java.util.List;
-
 @Mapper(componentModel = "spring", unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface StoryMapper {
 
     @Mapping(source = "user.username", target = "username")
     @Mapping(source = "media.url", target = "mediaUrl")
-    ViewStoryResponse toViewStoryDto(Story story);
+    ViewStoryResponse toViewStoryResponse(Story story);
 
     @Mapping(source = "user.username", target = "username")
     @Mapping(source = "user.profilePicture", target = "userPictureUrl", qualifiedByName = "getProfilePicture")

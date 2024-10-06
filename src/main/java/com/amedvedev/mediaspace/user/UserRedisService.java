@@ -95,8 +95,8 @@ public class UserRedisService {
     }
 
     public Optional<Long> getCachedUserIdByUsername(String username) {
-        String key = USERNAME_TO_ID_KEY_PREFIX + username;
-        String userIdStr = redisTemplate.opsForValue().get(key);
+        var key = USERNAME_TO_ID_KEY_PREFIX + username;
+        var userIdStr = redisTemplate.opsForValue().get(key);
 
         if (userIdStr == null) {
             log.debug("User ID not found in cache for username: {}", username);

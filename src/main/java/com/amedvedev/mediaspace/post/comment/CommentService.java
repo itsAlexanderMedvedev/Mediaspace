@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -74,7 +76,16 @@ public class CommentService {
         log.debug("Fetching comments for postId: {}", postId);
         var comments = commentRepository.findAllByPostId(postId);
 
+        checkIfPostHasComments(postId, comments);
+
         return commentMapper.toViewPostCommentsResponse(comments, postId);
+    }
+
+    private void checkIfPostHasComments(Long postId, List<Comment> comments) {
+        if (comments.isEmpty()) {
+            log.warn("No comments found for postId: {}", postId);
+            throw new CommentNotFoundException("No comments found for post");
+        }
     }
 
     @Transactional

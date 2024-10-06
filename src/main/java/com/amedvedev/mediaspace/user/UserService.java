@@ -13,8 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,23 +23,24 @@ public class UserService {
     private final UserRedisService userRedisService;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional(readOnly = true)
     public User getCurrentUser() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         log.debug("Retrieving user from token directly from database with username: {}", username);
 
-        return userRepository.findByUsernameIgnoreCase(username)
-                .orElseThrow(() -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
+        return userRepository.findByUsernameIgnoreCase(username).orElseThrow(
+                () -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
     }
 
     public UserDto getCurrentUserDto() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.debug("Attempting to current user from token with username: {}", username);
-        return getUserDtoFromCacheOrDb(username);
+        log.debug("Getting current user from token with username: {}", username);
+        return getUserDto(username);
     }
 
     public UserDto getUserDtoByUsername(String username) {
         log.debug("Getting user dto by username: {}", username);
-        return getUserDtoFromCacheOrDb(username);
+        return getUserDto(username);
     }
 
     public User findUserByUsername(String username) {
@@ -55,7 +54,7 @@ public class UserService {
         var follower = getCurrentUser();
         var followee = findUserByUsername(username);
 
-        log.debug("User {} is attempting to follow user {}", follower.getUsername(), followee.getUsername());
+        log.debug("User {} is following user {}", follower.getUsername(), followee.getUsername());
 
         verifyUserIsNotTryingToFollowingThemself(follower, followee);
         verifyUserIsNotAlreadyFollowed(follower, followee);
@@ -86,7 +85,7 @@ public class UserService {
         var follower = getCurrentUser();
         var followee = findUserByUsername(username);
 
-        log.debug("User {} is attempting to unfollow user {}", follower.getUsername(), followee.getUsername());
+        log.debug("User {} is unfollowing user {}", follower.getUsername(), followee.getUsername());
 
         verifyUserIsNotTryingToUnfollowThemself(follower, followee);
         verifyUserIsFollowed(follower, followee);
@@ -150,7 +149,7 @@ public class UserService {
     public UpdateUserResponse changePassword(ChangePasswordRequest changePasswordRequest) {
         var user = getCurrentUser();
 
-        log.debug("User {} is attempting to change password", user.getUsername());
+        log.debug("User {} is changing change password", user.getUsername());
 
         verifyPasswordIsCorrect(changePasswordRequest.getOldPassword(), user);
         user.setPassword(passwordEncoder.encode(changePasswordRequest.getPassword()));
@@ -163,12 +162,13 @@ public class UserService {
                 .build();
     }
 
+    @Transactional
     public void save(User user) {
+        log.debug("Saving user with username: {}", user.getUsername());
         var savedUser = userRepository.save(user);
-        log.debug("User saved with username: {}", savedUser.getUsername());
-        userRedisService.cacheUser(user);
+        log.debug("Caching user with username: {}", user.getUsername());
+        userRedisService.cacheUser(savedUser);
         userRedisService.cacheUsernameToId(savedUser.getUsername(), savedUser.getId());
-        log.debug("User cached with username: {}", savedUser.getUsername());
     }
 
     @Transactional
@@ -180,8 +180,6 @@ public class UserService {
         user.setDeleted(true);
         userRepository.save(user);
         clearCachedUserInfo(user);
-
-        log.debug("User deleted with username: {}", user.getUsername());
     }
 
     private void clearCachedUserInfo(User user) {
@@ -194,7 +192,7 @@ public class UserService {
         var user = userRepository.findByUsernameIgnoreCaseAndIncludeSoftDeleted(request.getUsername())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        log.debug("Trying to restore user with username: {}", user.getUsername());
+        log.debug("Restoring user with username: {}", user.getUsername());
 
         verifyUserNotDeleted(user);
         verifyPasswordIsCorrect(request.getPassword(), user);
@@ -203,7 +201,6 @@ public class UserService {
         userRepository.save(user);
         cacheUserAndIdMapping(user);
 
-        log.info("User with username: {} restored successfully", user.getUsername());
         return RestoreUserResponse.builder()
                 .message("User restored successfully. Please login to continue.")
                 .build();
@@ -241,7 +238,7 @@ public class UserService {
         );
     }
 
-    private UserDto getUserDtoFromCacheOrDb(String username) {
+    private UserDto getUserDto(String username) {
         return userRedisService.getCachedUserIdByUsername(username)
             .flatMap(userRedisService::getCachedUserById)
             .orElseGet(() -> {
@@ -252,12 +249,7 @@ public class UserService {
 
     private UserDto getAndCacheUserDtoByUsername(String username) {
         var user = findUserByUsername(username);
-        return cacheAndReturnUserDto(user);
-    }
-
-    private UserDto cacheAndReturnUserDto(User user) {
         userRedisService.cacheUser(user);
         return userMapper.toUserDto(user);
     }
-
 }
