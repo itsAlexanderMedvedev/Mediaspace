@@ -1,9 +1,6 @@
 package com.amedvedev.mediaspace.user;
 
-import com.amedvedev.mediaspace.redis.TtlUpdateEntry;
 import com.amedvedev.mediaspace.user.dto.UserDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -17,9 +14,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UserRedisService {
 
-    private final ObjectMapper objectMapper;
     private final UserMapper userMapper;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String USER_KEY_PREFIX = "users:";
     private static final String USERNAME_TO_ID_KEY_PREFIX = "username_to_id:";
@@ -32,95 +28,58 @@ public class UserRedisService {
     public void cacheUser(User user) {
         log.debug("Caching user with id: {}", user.getId());
         var userDto = userMapper.toUserDto(user);
-        tryCacheUserDto(userDto);
+        var key = USER_KEY_PREFIX + userDto.getId();
+        redisTemplate.opsForValue().set(key, userDto, DEFAULT_USER_TTL, TimeUnit.HOURS);
     }
 
-    private void tryCacheUserDto(UserDto userDto) {
-        String key = USER_KEY_PREFIX + userDto.getId();
-        try {
-            String userJson = objectMapper.writeValueAsString(userDto);
-            redisTemplate.opsForValue().set(key, userJson, DEFAULT_USER_TTL, TimeUnit.HOURS);
-            log.debug("Cached user with id: {}", userDto.getId());
-        } catch (JsonProcessingException e) {
-            log.error("Error serializing user with id: {}", userDto.getId(), e);
-        }
-    }
+    public Optional<UserDto> getUserDtoById(Long id) {
+        log.debug("Retrieving UserDto from cache with id: {}", id);
+        var key = USER_KEY_PREFIX + id;
+        UserDto userJson = (UserDto) redisTemplate.opsForValue().get(key);
 
-    public Optional<UserDto> getCachedUserById(Long id) {
-        log.debug("Retrieving user from cache with id: {}", id);
-
-        String key = USER_KEY_PREFIX + id;
-        var userDto = extractUserDtoWithKey(key);
-        userDto.ifPresent(dto -> refreshKeyTtl(new TtlUpdateEntry(key, DEFAULT_USER_TTL, TimeUnit.HOURS)));
-
-        return userDto;
-    }
-
-    private void refreshKeyTtl(TtlUpdateEntry ttlUpdateEntry) {
-        String key = ttlUpdateEntry.key();
-        redisTemplate.expire(key, ttlUpdateEntry.ttl(), ttlUpdateEntry.timeUnit());
-        log.debug("TTL updated for key: {}", key);
-    }
-
-    private Optional<UserDto> extractUserDtoWithKey(String key) {
-        String userJson = redisTemplate.opsForValue().get(key);
-
-        if (userJson != null) {
-            return deserializeUserDto(key, userJson);
-        }
-
-        log.debug("User not found in cache with key: {}", key);
-        return Optional.empty();
-    }
-
-    private Optional<UserDto> deserializeUserDto(String key, String userJson) {
-        try {
-            return Optional.of(objectMapper.readValue(userJson, UserDto.class));
-        } catch (JsonProcessingException e) {
-            log.error("Error deserializing user from cache with key: {}", key, e);
+        if (userJson == null) {
+            log.debug("User not found in cache with key: {}", key);
             return Optional.empty();
         }
+
+        refreshKeyTtl(key, DEFAULT_USER_TTL, TimeUnit.HOURS);
+        return Optional.of(userJson);
     }
 
     public void clearCachedUserById(Long id) {
-        String key = USER_KEY_PREFIX + id;
+        log.debug("Clearing cached user data for user with id: {}", id);
+        var key = USER_KEY_PREFIX + id;
         redisTemplate.delete(key);
-        log.debug("Cleared cached user data for user with id: {}", id);
     }
 
     public void cacheUsernameToId(String username, Long id) {
-        String key = USERNAME_TO_ID_KEY_PREFIX + username;
+        log.debug("Caching username-to-id mapping for username: {}", username);
+        var key = USERNAME_TO_ID_KEY_PREFIX + username;
         redisTemplate.opsForValue().set(key, id.toString(), DEFAULT_USERNAME_TO_ID_TTL, TimeUnit.HOURS);
-        log.debug("Cached username-to-id mapping for username: {}", username);
     }
 
     public Optional<Long> getCachedUserIdByUsername(String username) {
+        log.debug("Retrieving user ID from cache for username: {}", username);
         var key = USERNAME_TO_ID_KEY_PREFIX + username;
-        var userIdStr = redisTemplate.opsForValue().get(key);
+        Long userIdStr = (Long) redisTemplate.opsForValue().get(key);
 
         if (userIdStr == null) {
             log.debug("User ID not found in cache for username: {}", username);
             return Optional.empty();
         }
 
-        log.debug("Retrieved user ID from cache for username: {}", username);
-        refreshKeyTtl(new TtlUpdateEntry(key, DEFAULT_USERNAME_TO_ID_TTL, TimeUnit.HOURS));
-
-        return parseUserId(username, userIdStr);
-    }
-
-    private Optional<Long> parseUserId(String username, String userIdStr) {
-        try {
-            return Optional.of(Long.parseLong(userIdStr));
-        } catch (NumberFormatException e) {
-            log.error("Error parsing cached user ID for username: {}. Invalid number format.", username, e);
-            return Optional.empty();
-        }
+        refreshKeyTtl(key, DEFAULT_USERNAME_TO_ID_TTL, TimeUnit.HOURS);
+        return Optional.of(userIdStr);
     }
 
     public void clearCachedUserIdByUsername(String username) {
         String key = USERNAME_TO_ID_KEY_PREFIX + username;
         redisTemplate.delete(key);
         log.debug("Cleared cached user ID for username: {}", username);
+    }
+
+    private void refreshKeyTtl(String key, int ttl, TimeUnit timeUnit) {
+        redisTemplate.expire(key, ttl, timeUnit);
+        log.debug("TTL updated for key: {}", key);
     }
 }

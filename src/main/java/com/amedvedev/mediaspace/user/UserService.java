@@ -240,7 +240,7 @@ public class UserService {
 
     private UserDto getUserDto(String username) {
         return userRedisService.getCachedUserIdByUsername(username)
-            .flatMap(userRedisService::getCachedUserById)
+            .flatMap(userRedisService::getUserDtoById)
             .orElseGet(() -> {
                 log.debug("User with username: {} not found in cache", username);
                 return getAndCacheUserDtoByUsername(username);
