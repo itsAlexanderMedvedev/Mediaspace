@@ -14,25 +14,16 @@ public interface UserRepository extends CrudRepository<User, Long> {
 
     Optional<User> findByUsernameIgnoreCase(String username);
 
-    @Query(value = "SELECT * FROM _user", nativeQuery = true)
-    List<User> findAllIncludingSoftDeleted();
-
     // Query to avoid soft deleted users being excluded in order to tell the user that the account can be restored
     @Query(value = "SELECT * FROM _user WHERE LOWER(username) = LOWER(:username)", nativeQuery = true)
     Optional<User> findByUsernameIgnoreCaseAndIncludeSoftDeleted(@Param("username") String username);
 
-    @Query("SELECT u.followers FROM User u WHERE u.id = :userId")
-    List<User> findFollowersByUserId(@Param("userId") Long userId);
+    @Query("SELECT f.follower.id FROM Follow f WHERE f.followee.id = :userId")
+    List<Long> findFollowersIdsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT u.following FROM User u WHERE u.id = :userId")
-    List<User> findFollowingByUserId(@Param("userId") Long userId);
+    @Query("SELECT COUNT(f) FROM Follow f WHERE f.followee = :userId")
+    int countFollowersByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(f) FROM User u JOIN u.followers f WHERE u.id = :userId")
-    long countFollowersByUserId(@Param("userId") Long userId);
-
-    @Query("SELECT COUNT(f) FROM User u JOIN u.following f WHERE u.id = :userId")
-    long countFollowingByUserId(@Param("userId") Long userId);
-
-    @Query("SELECT f.id FROM User u JOIN u.following f WHERE u.id = :userId")
-    List<Long> findFollowingIdsByUserId(@Param("userId") Long userId);
+    @Query("SELECT COUNT(f) FROM Follow f WHERE f.follower = :userId")
+    int countFollowingByUserId(@Param("userId") Long userId);
 }

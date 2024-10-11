@@ -17,10 +17,10 @@ public class UserRedisService {
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String USER_KEY_PREFIX = "users:";
+    private static final String USER_KEY_PREFIX = "user:";
     private static final String USERNAME_TO_ID_KEY_PREFIX = "username_to_id:";
-    private static final String FOLLOWERS_COUNT_KEY_PREFIX = "followers_count:";
-    private static final String FOLLOWING_COUNT_KEY_PREFIX = "following_count:";
+    private static final String FOLLOWERS_COUNT_KEY_SUFFIX = ":followers_count";
+    private static final String FOLLOWING_COUNT_KEY_SUFFIX = ":following_count";
 
     private static final int DEFAULT_USER_TTL = 1;
     private static final int DEFAULT_USERNAME_TO_ID_TTL = 24;
@@ -77,6 +77,31 @@ public class UserRedisService {
         redisTemplate.delete(key);
         log.debug("Cleared cached user ID for username: {}", username);
     }
+
+    public Optional<Integer> getFollowersCount(Long userId) {
+        return getCountFromCache(userId, FOLLOWERS_COUNT_KEY_SUFFIX);
+    }
+
+    public Optional<Integer> getFollowingCount(Long userId) {
+        return getCountFromCache(userId, FOLLOWING_COUNT_KEY_SUFFIX);
+    }
+
+    private Optional<Integer> getCountFromCache(Long userId, String countTypePostfix) {
+        // If countTypePostfix is ":followers_count", lookingFor will be "followers count"
+        var lookingFor = countTypePostfix.replaceAll("([:_])", " ").trim();
+        log.debug("Retrieving {} from cache for user with id: {}", lookingFor, userId);
+        var key = USER_KEY_PREFIX + userId + countTypePostfix;
+        Integer count = (Integer) redisTemplate.opsForValue().get(key);
+
+        if (count == null) {
+            log.debug("{} count not found in cache for user with id: {}", lookingFor, userId);
+            return Optional.empty();
+        }
+
+        refreshKeyTtl(key, DEFAULT_USER_TTL, TimeUnit.HOURS);
+        return Optional.of(count);
+    }
+
 
     private void refreshKeyTtl(String key, int ttl, TimeUnit timeUnit) {
         redisTemplate.expire(key, ttl, timeUnit);

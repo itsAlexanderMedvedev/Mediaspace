@@ -5,6 +5,7 @@ import com.amedvedev.mediaspace.media.Media;
 import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
 import com.amedvedev.mediaspace.story.dto.ViewStoriesFeedResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
+import com.amedvedev.mediaspace.story.event.StoryCreatedEvent;
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
 import com.amedvedev.mediaspace.user.User;
@@ -12,6 +13,7 @@ import com.amedvedev.mediaspace.user.UserService;
 import com.amedvedev.mediaspace.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class StoryService {
     private final StoryRepository storyRepository;
     private final StoryMapper storyMapper;
     private final StoryRedisService storyRedisService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public static final int MAXIMUM_STORIES_COUNT = 30;
 
@@ -37,9 +40,21 @@ public class StoryService {
 
         verifyMaximumStoriesCountIsNotReached(user);
 
-        var savedStory = storyRepository.save(buildStory(request, user));
+        var story = buildStory(request, user);
+        var savedStory = storyRepository.save(story);
+
+        eventPublisher.publishEvent(new StoryCreatedEvent(this, savedStory));
+
         return storyMapper.toViewStoryResponse(savedStory);
     }
+
+//    private Story saveStory(Story story) {
+//        log.debug("Saving story with id: {}", story.getId());
+//        var savedStory = storyRepository.save(story);
+//        var storyDto = storyMapper.toStoryDto(savedStory);
+//        storyRedisService.cacheStoryDto(savedStory.getId(), storyDto);
+//        return savedStory;
+//    }
 
     private void verifyMaximumStoriesCountIsNotReached(User user) {
         if (user.getStories().size() == MAXIMUM_STORIES_COUNT) {

@@ -26,6 +26,7 @@ public class UserProfileService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PostMapper postMapper;
+    private final UserRedisService userRedisService;
 
     @Transactional(readOnly = true)
     public ViewUserProfileResponse getCurrentUserProfile() {
@@ -44,8 +45,8 @@ public class UserProfileService {
     public ViewUserProfileResponse getUserProfileForUserDto(UserDto userDto) {
         var posts = getPosts(userDto.getId());
         var stories = getStoriesIds(userDto.getId());
-        long followersCount = userRepository.countFollowersByUserId(userDto.getId());
-        long followingCount = userRepository.countFollowingByUserId(userDto.getId());
+        var followersCount = userService.getFollowersCount(userDto.getId());
+        var followingCount = userService.getFollowingCount(userDto.getId());
         log.debug("Fetching profile of user from dto with username: {}", userDto.getUsername());
         return userMapper.toViewUserProfileResponse(userDto, posts, stories, followersCount, followingCount);
     }

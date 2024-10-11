@@ -19,7 +19,7 @@ public class ViewUserProfileResponse {
     @Schema(description = "Username", example = "username")
     private String username;
 
-    @Schema(description = "Profile picture URL", example = "https://example.com/profile.jpg")
+    @Schema(description = "Profile picture URL", example = "https://example.com/image.jpg")
     private String profilePictureUrl;
 
     @Schema(description = "User's posts")

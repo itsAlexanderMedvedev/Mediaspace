@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -109,6 +111,22 @@ public class UserService {
             log.warn("User {} attempted to unfollow themselves", follower.getUsername());
             throw new FollowException("Cannot unfollow yourself");
         }
+    }
+
+    public int getFollowersCount(Long id) {
+        log.debug("Getting followers count for user with id: {}", id);
+        return userRedisService.getFollowersCount(id).orElseGet(() -> userRepository.countFollowersByUserId(id));
+    }
+
+    public int getFollowingCount(Long id) {
+        log.debug("Getting following count for user with id: {}", id);
+        return userRedisService.getFollowingCount(id).orElseGet(() -> userRepository.countFollowingByUserId(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getFollowersIdsByUserId(Long id) {
+        log.debug("Getting followers for user with id: {}", id);
+        return userRepository.findFollowersIdsByUserId(id);
     }
 
     @Transactional

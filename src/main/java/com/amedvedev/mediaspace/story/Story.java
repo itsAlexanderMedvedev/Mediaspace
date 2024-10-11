@@ -6,7 +6,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAmount;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
@@ -32,14 +36,14 @@ public class Story {
     private Media media;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        expiresAt = createdAt.plusDays(1);
+        createdAt = Instant.now();
+        expiresAt = createdAt.plus(1, ChronoUnit.DAYS);
     }
 }
