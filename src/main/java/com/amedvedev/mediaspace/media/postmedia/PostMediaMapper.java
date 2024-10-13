@@ -14,10 +14,10 @@ import java.util.stream.IntStream;
 @Mapper(componentModel = "spring", unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface PostMediaMapper {
 
-    @Mapping(source = "media.id", target = "id")
-    @Mapping(source = "media.url", target = "url")
-    @Mapping(source = "id.position", target = "position")
-    ViewPostMediaResponse toViewPostMediaDto(PostMedia postMedia);
+    @Mapping(target = "id", source = "media.id")
+    @Mapping(target = "url", source = "media.url")
+    @Mapping(target = "position", source = "id.position")
+    ViewPostMediaResponse toViewPostMediaResponse(PostMedia postMedia);
 
     default List<PostMedia> mapUrlsToPostMedia(List<CreateMediaRequest> createMediaRequests, Post post) {
         return IntStream.range(0, createMediaRequests.size())

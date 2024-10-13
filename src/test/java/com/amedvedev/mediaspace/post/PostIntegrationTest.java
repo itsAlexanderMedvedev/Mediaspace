@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +66,9 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     private User user;
 
     private String token;
@@ -73,17 +78,15 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = POSTS_ENDPOINT;
 
-        executeInsideTransaction(() -> {
-            jdbcTemplate.execute(CLEAR_DB);
-            user = createUser("user");
-            return null;
-        });
+        clearDbAndFlushRedis();
 
+        user = createUser("user");
         token = jwtService.generateToken(user);
     }
 
     private User createUser(String username) {
-        return userRepository.save(User.builder().username(username).password("encoded-password").build());
+        return executeInsideTransaction(() ->
+                userRepository.save(User.builder().username(username).password("encoded-password").build()));
     }
 
     private Post createPost(String title, String description) {

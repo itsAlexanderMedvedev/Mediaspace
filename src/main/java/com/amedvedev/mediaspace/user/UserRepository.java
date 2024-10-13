@@ -21,9 +21,9 @@ public interface UserRepository extends CrudRepository<User, Long> {
     @Query("SELECT f.follower.id FROM Follow f WHERE f.followee.id = :userId")
     List<Long> findFollowersIdsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(f) FROM Follow f WHERE f.followee = :userId")
+    @Query("SELECT COUNT(f) FROM Follow f WHERE f.followee.id = :userId")
     int countFollowersByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(f) FROM Follow f WHERE f.follower = :userId")
+    @Query("SELECT COUNT(f) FROM Follow f WHERE f.follower.id = :userId")
     int countFollowingByUserId(@Param("userId") Long userId);
 }

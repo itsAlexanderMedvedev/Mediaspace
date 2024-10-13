@@ -10,14 +10,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ViewStoriesFeedResponse {
+public class StoryPreviewResponse {
 
     @Schema(description = "The story ID", example = "1")
     private Long storyId;
 
     @Schema(description = "The publisher username", example = "username")
     private String username;
-
-    @Schema(description = "Media URL", example = "https://www.example.com/image.jpg")
-    private String userPictureUrl;
 }

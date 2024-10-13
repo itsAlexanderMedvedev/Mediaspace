@@ -1,5 +1,6 @@
 package com.amedvedev.mediaspace.post;
 
+import com.amedvedev.mediaspace.media.dto.ViewPostMediaResponse;
 import com.amedvedev.mediaspace.media.postmedia.PostMediaMapper;
 import com.amedvedev.mediaspace.post.dto.CreatePostRequest;
 import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
@@ -36,7 +37,8 @@ public class PostService {
         var post = buildPost(request, user);
 
         var savedPost = postRepository.save(post);
-        return postMapper.toViewPostResponse(savedPost);
+        var viewPostMediaResponseList = getViewPostMediaResponseList(savedPost);
+        return postMapper.toViewPostResponse(savedPost, viewPostMediaResponseList);
     }
 
     private Post buildPost(CreatePostRequest request, User user) {
@@ -51,10 +53,6 @@ public class PostService {
         post.setPostMediaList(postMediaList);
 
         return post;
-    }
-
-    public Post savePost(Post post) {
-        return postRepository.save(post);
     }
 
     @Transactional(readOnly = true)
@@ -89,7 +87,15 @@ public class PostService {
     public ViewPostResponse getViewPostResponseById(Long id) {
         log.info("Getting ViewPostResponse for post with id: {}", id);
         var post = findPostById(id);
-        return postMapper.toViewPostResponse(post);
+        var viewPostMediaResponseList = getViewPostMediaResponseList(post);
+
+        return postMapper.toViewPostResponse(post, viewPostMediaResponseList);
+    }
+
+    private List<ViewPostMediaResponse> getViewPostMediaResponseList(Post post) {
+        return post.getPostMediaList().stream()
+                .map(postMediaMapper::toViewPostMediaResponse)
+                .toList();
     }
 
     public Post findPostById(Long id) {

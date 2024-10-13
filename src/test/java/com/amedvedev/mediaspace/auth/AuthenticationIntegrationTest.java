@@ -10,10 +10,15 @@ import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.util.Objects;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +46,9 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     private String deletePath;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
@@ -49,7 +57,9 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         securedPath = RestAssured.baseURI + ":" + port + ME_ENDPOINT;
         deletePath = RestAssured.baseURI + ":" + port + USERS_ENDPOINT;
 
-        jdbcTemplate.execute(CLEAR_DB);
+        clearDbAndFlushRedis();
+
+        System.out.println(redisTemplate.keys("*"));
     }
 
     private void registerUser(String username, String password) {

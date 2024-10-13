@@ -4,12 +4,15 @@ import com.amedvedev.mediaspace.story.dto.StoryDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.DefaultTypedTuple;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -17,57 +20,57 @@ import java.util.Objects;
 public class StoryRedisService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final StoryMapper storyMapper;
 
-    private static final String STORIES_FEED_KEY_PREFIX = "user:";
-    private static final String STORIES_FEED_KEY_SUFFIX = ":stories";
-
-//    public void cacheStoriesFeedForUser(Long id, List<ViewStoriesFeedResponse> stories) {
-//        log.debug("Caching stories feed for user with id: {}", id);
-//        var key = STORIES_FEED_KEY_PREFIX + id;
-//        String storiesJson = objectMapper.writeValueAsString(stories);
-//        redisTemplate.opsForValue().set(key, storiesJson);
-//    }
-//
-//    public List<ViewStoriesFeedResponse> getCachedStoriesFeedForUser(Long id) {
-//        log.debug("Retrieving stories feed from cache for user with id: {}", id);
-//
-//        String key = STORIES_FEED_KEY_PREFIX + id;
-//        String storiesJson = redisTemplate.opsForValue().get(key);
-//
-//        if (storiesJson != null) {
-//            try {
-//                objectMapper.readerForListOf(ViewStoriesFeedResponse.class);
-//                return objectMapper.readValue(storiesJson, new TypeReference<List<ViewStoriesFeedResponse>>() {});
-//            } catch (JsonProcessingException e) {
-//                log.error("Error deserializing stories feed from cache for user with id: {}", id, e);
-//                return new ArrayList<>();
-//            }
-//        }
-//        return new ArrayList<>();
-//    }
-//
-//    public void clearCachedStoriesFeedForUser(Long userId) {
-//        String key = STORIES_FEED_KEY_PREFIX + userId;
-//        redisTemplate.delete(key);
-//        log.debug("Cleared cached stories feed for user with id: {}", userId);
-//    }
+    private static final String STORY_PREFIX = "story:";
+    private static final String USER_PREFIX = "user:";
+    private static final String STORIES_FEED_SUFFIX = ":stories_feed";
+    private static final String STORIES_SUFFIX = ":stories";
 
     public void cacheStoryDto(Long id, StoryDto storyDto) {
         log.debug("Caching story with id: {}", id);
-        var key = STORIES_FEED_KEY_PREFIX + id;
+        var key = STORY_PREFIX + id;
         redisTemplate.opsForValue().set(key, storyDto);
     }
 
-    public void addStoryIdToFollowersFeed(List<Long> followersIds, StoryDto storyDto) {
-        log.debug("Adding story with id {} to followers feeds", storyDto.getId());
+    public void cacheStoriesIdsForUser(Long userId, List<Story> stories) {
+        log.debug("Caching stories ids for user with id: {}", userId);
+        var key = constructStoriesKey(userId);
+        var storiesIdsTuples = getStoriesIdsTuples(stories);
+        redisTemplate.opsForZSet().add(key, storiesIdsTuples);
+    }
+
+    public void cacheStoryIdToUserStories(Long userId, Story story) {
+        var storyId = story.getId();
+        log.debug("Caching story with id {} to user with id {}", storyId, userId);
+        var key = constructStoriesKey(userId);
+        redisTemplate.opsForZSet().add(key, storyId, story.getCreatedAt().toEpochMilli());
+    }
+
+    public List<Long> getStoriesIdsForUser(Long userId) {
+        log.debug("Retrieving stories ids for user with id: {}", userId);
+        var key = constructStoriesKey(userId);
+        redisTemplate.opsForValue().set("testkey", "testvalue");
+        var storiesIds = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
+        return storiesIds == null ? List.of() : storyMapper.mapStoriesIdsObjectsToLong(storiesIds);
+    }
+
+    public void removeStoryIdFromUserStories(Long userId, Long storyId) {
+        log.debug("Removing story with id {} from user with id {}", storyId, userId);
+        var key = constructStoriesKey(userId);
+        redisTemplate.opsForZSet().remove(key, storyId);
+    }
+
+    public void addStoryIdToFollowersFeed(List<Long> followersIds, Story story) {
+        var storyId = story.getId();
+        log.debug("Caching story id {} to followers feeds", storyId);
 
         if (followersIds.isEmpty()) {
             log.debug("No followers to add story to");
             return;
         }
 
-        var storyCreationTimestamp = storyDto.getCreatedAt().toEpochMilli();
-        var storyId = storyDto.getId();
+        var storyCreationTimestamp = story.getCreatedAt().toEpochMilli();
         redisTemplate.executePipelined((RedisCallback<?>) connection -> {
             followersIds.forEach(id -> addToRedisSortedSet(storyId, id, connection, storyCreationTimestamp));
             return null;
@@ -89,10 +92,40 @@ public class StoryRedisService {
         }
     }
 
-    private String constructStoriesFeedKey(Long id) {
-        return STORIES_FEED_KEY_PREFIX + id + STORIES_FEED_KEY_SUFFIX;
+    public void cacheFeedStoriesIdsForUser(Long id, List<Story> stories) {
+        log.debug("Caching feed stories ids for user with id: {}", id);
+        var key = constructStoriesFeedKey(id);
+        var storiesIdsTuples = getStoriesIdsTuples(stories);
+        redisTemplate.opsForZSet().add(key, storiesIdsTuples);
     }
 
-    public Object getCachedStoriesFeedForUser(Long id) {
+    public List<Long> getFeedStoriesIdForUser(Long userId) {
+        var key = constructStoriesFeedKey(userId);
+        var storiesIdsObjects = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
+        return storiesIdsObjects == null ? List.of() : storyMapper.mapStoriesIdsObjectsToLong(storiesIdsObjects);
+    }
+
+    private Set<ZSetOperations.TypedTuple<Object>> getStoriesIdsTuples(List<Story> stories) {
+        return stories.stream()
+                .map(story -> new DefaultTypedTuple<>((Object) story.getId(), (double) story.getCreatedAt().toEpochMilli()))
+                .collect(Collectors.toSet());
+    }
+
+    public StoryDto getStoryDtoById(Long id) {
+        var key = STORY_PREFIX + id;
+        return (StoryDto) redisTemplate.opsForValue().get(key);
+    }
+
+    public void removeStoryDtoById(Long id) {
+        var key = STORY_PREFIX + id;
+        redisTemplate.delete(key);
+    }
+
+    private String constructStoriesFeedKey(Long userId) {
+        return USER_PREFIX + userId + STORIES_FEED_SUFFIX;
+    }
+
+    private String constructStoriesKey(Long userId) {
+        return USER_PREFIX + userId + STORIES_SUFFIX;
     }
 }

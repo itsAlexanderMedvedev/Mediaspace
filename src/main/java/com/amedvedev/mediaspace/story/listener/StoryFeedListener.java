@@ -25,7 +25,6 @@ public class StoryFeedListener {
         var story = event.getStory();
         var publisherId = story.getUser().getId();
         var followersIds = userService.getFollowersIdsByUserId(publisherId);
-        var storyDto = storyMapper.toStoryDto(story);
-        storyRedisService.addStoryIdToFollowersFeed(followersIds, storyDto);
+        storyRedisService.addStoryIdToFollowersFeed(followersIds, story);
     }
 }

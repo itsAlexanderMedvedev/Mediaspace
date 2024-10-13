@@ -3,6 +3,8 @@ package com.amedvedev.mediaspace.testutil;
 import com.redis.testcontainers.RedisContainer;
 import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -32,13 +34,16 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"))
+
+    protected static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"))
                 .withUsername("postgres")
                 .withPassword("pass")
                 .withDatabaseName("mediaspace");
 
-    static RedisContainer redis = new RedisContainer(
+    protected static RedisContainer redis = new RedisContainer(
             RedisContainer.DEFAULT_IMAGE_NAME.withTag(RedisContainer.DEFAULT_TAG));
 
     static {
@@ -47,7 +52,7 @@ public abstract class AbstractIntegrationTest {
     }
 
     @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
+    private static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
@@ -56,11 +61,11 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.liquibase.user", postgres::getUsername);
         registry.add("spring.liquibase.password", postgres::getPassword);
 
-        registry.add("spring.redis.host", redis::getHost);
-        registry.add("spring.redis.port", redis::getRedisPort);
+        registry.add("spring.data.redis.host", redis::getHost);
+        registry.add("spring.data.redis.port", redis::getRedisPort);
     }
 
-    protected  <T> T executeInsideTransaction(Callable<T> callable) {
+    protected <T> T executeInsideTransaction(Callable<T> callable) {
         var transactionExisted = TestTransaction.isActive();
         if (transactionExisted) TestTransaction.end();
 
@@ -77,5 +82,17 @@ public abstract class AbstractIntegrationTest {
         } finally {
             if (transactionExisted) TestTransaction.start();
         }
+    }
+
+    protected void clearDbAndFlushRedis() {
+        executeInsideTransaction(() -> {
+            jdbcTemplate.execute(CLEAR_DB);
+            return null;
+        });
+
+        redisTemplate.execute((RedisCallback<Void>) connection -> {
+            connection.serverCommands().flushDb();
+            return null;
+        });
     }
 }

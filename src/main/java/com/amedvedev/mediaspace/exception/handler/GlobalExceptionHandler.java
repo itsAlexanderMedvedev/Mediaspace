@@ -6,6 +6,7 @@ import com.amedvedev.mediaspace.exception.ForbiddenActionException;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.DisabledException;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -97,7 +99,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public GeneralErrorResponse handleException(Exception ex) {
-        System.out.println(ex.getMessage() + " " + ex.getClass());
+        log.error("An unexpected error occurred: {}", ex.getMessage(), ex);
         return new GeneralErrorResponse(ex.getMessage(), LocalDateTime.now());
     }
 }

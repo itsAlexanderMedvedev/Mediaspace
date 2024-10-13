@@ -1,6 +1,5 @@
 package com.amedvedev.mediaspace.story.listener;
 
-import com.amedvedev.mediaspace.story.Story;
 import com.amedvedev.mediaspace.story.StoryMapper;
 import com.amedvedev.mediaspace.story.StoryRedisService;
 import com.amedvedev.mediaspace.story.event.StoryCreatedEvent;
@@ -25,5 +24,6 @@ public class StoryCacheListener {
         log.debug("Received story created event for story with id: {}", story.getId());
         var storyDto = storyMapper.toStoryDto(story);
         storyRedisService.cacheStoryDto(story.getId(), storyDto);
+        storyRedisService.cacheStoryIdToUserStories(story.getUser().getId(), story);
     }
 }

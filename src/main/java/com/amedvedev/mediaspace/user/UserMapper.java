@@ -14,17 +14,17 @@ import java.util.List;
 @Mapper(componentModel = "spring", unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
 
-    @Mapping(source = "profilePicture.url", target = "profilePictureUrl")
+    @Mapping(target = "profilePictureUrl", source = "profilePicture", qualifiedByName = "getProfilePicture")
     UserDto toUserDto(User user);
     
     ViewUserProfileResponse toViewUserProfileResponse(UserDto user,
                                                       List<UserProfilePostResponse> posts,
                                                       List<Long> storiesIds,
-                                                      long followersCount,
-                                                      long followingCount);
+                                                      int followersCount,
+                                                      int followingCount);
 
     @Named("getProfilePicture")
-    default Media getProfilePicture(String profilePictureUrl) {
-        return profilePictureUrl == null ? null : Media.builder().url(profilePictureUrl).build();
+    default String getProfilePicture(Media profilePictureUrl) {
+        return profilePictureUrl == null ? null : profilePictureUrl.getUrl();
     }
 }

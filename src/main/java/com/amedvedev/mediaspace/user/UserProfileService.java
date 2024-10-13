@@ -43,11 +43,12 @@ public class UserProfileService {
     // TODO: REFACTOR USING ENTITY GRAPH OR JOIN FETCH
     @Transactional(propagation = Propagation.MANDATORY)
     public ViewUserProfileResponse getUserProfileForUserDto(UserDto userDto) {
+        log.info("Fetching profile of user with id: {}", userDto.getId());
         var posts = getPosts(userDto.getId());
         var stories = getStoriesIds(userDto.getId());
         var followersCount = userService.getFollowersCount(userDto.getId());
         var followingCount = userService.getFollowingCount(userDto.getId());
-        log.debug("Fetching profile of user from dto with username: {}", userDto.getUsername());
+        log.debug("Mapping user profile response");
         return userMapper.toViewUserProfileResponse(userDto, posts, stories, followersCount, followingCount);
     }
 

@@ -37,6 +37,6 @@ public class ViewPostResponse {
     @Schema(description = "The post comments count", example = "5")
     private int commentsCount;
 
-    @Schema(description = "The post creation date")
-    private LocalDateTime createdAt;
+    @Schema(description = "The post creation date", example = "31.12.2024 12:00")
+    private String createdAt;
 }

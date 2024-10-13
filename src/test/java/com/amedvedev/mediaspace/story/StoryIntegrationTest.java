@@ -2,9 +2,10 @@ package com.amedvedev.mediaspace.story;
 
 import com.amedvedev.mediaspace.auth.JwtService;
 import com.amedvedev.mediaspace.media.Media;
-import com.amedvedev.mediaspace.media.MediaRepository;
 import com.amedvedev.mediaspace.media.dto.CreateMediaRequest;
 import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
+import com.amedvedev.mediaspace.story.dto.StoryDto;
+import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
 import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.User;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.http.HttpStatus;
 
 import static io.restassured.RestAssured.given;
@@ -38,21 +40,20 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     private StoryRepository storyRepository;
 
     @Autowired
-    private MediaRepository mediaRepository;
-
-    @Autowired
     private JwtService jwtService;
 
     private User user;
 
     private String token;
 
+
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = STORIES_ENDPOINT;
 
-        jdbcTemplate.execute(CLEAR_DB);
+        clearDbAndFlushRedis();
 
         user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);
@@ -60,13 +61,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
 
     private Story createStory() {
         var media = Media.builder().url("https://example.com").build();
-
-        return storyRepository.save(
-                Story.builder()
-                        .user(user)
-                        .media(media)
-                        .build()
-        );
+        return storyRepository.save(Story.builder().user(user).media(media).build());
     }
 
     @Test
@@ -83,7 +78,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.CREATED.value())
                 .extract()
-                .as(ViewStoryResponse.class);
+                .as(StoryDto.class);
 
         assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getMediaUrl()).isEqualTo(request.getCreateMediaRequest().getUrl());
@@ -121,7 +116,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .extract()
                 .as(ViewStoryResponse.class);
 
-        assertThat(response.getId()).isEqualTo(story.getId());
+        assertThat(response.getUsername()).isEqualTo(user.getUsername());
         assertThat(response.getMediaUrl()).isEqualTo(story.getMedia().getUrl());
     }
 
@@ -147,7 +142,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .jsonPath()
-                .getList(".", ViewStoryResponse.class);
+                .getList(".", StoryPreviewResponse.class);
 
         assertThat(response).hasSize(2);
     }

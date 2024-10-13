@@ -64,8 +64,8 @@ public class UserService {
         follower.follow(followee);
 
         userRepository.save(follower);
-        userRedisService.cacheUser(follower);
-        userRedisService.cacheUser(followee);
+        userRedisService.cacheUserDto(userMapper.toUserDto(follower));
+        userRedisService.cacheUserDto(userMapper.toUserDto(followee));
     }
 
     private void verifyUserIsNotAlreadyFollowed(User follower, User followee) {
@@ -95,8 +95,8 @@ public class UserService {
         follower.unfollow(followee);
 
         userRepository.save(follower);
-        userRedisService.cacheUser(follower);
-        userRedisService.cacheUser(followee);
+        userRedisService.cacheUserDto(userMapper.toUserDto(follower));
+        userRedisService.cacheUserDto(userMapper.toUserDto(followee));
     }
 
     private void verifyUserIsFollowed(User follower, User followee) {
@@ -185,7 +185,7 @@ public class UserService {
         log.debug("Saving user with username: {}", user.getUsername());
         var savedUser = userRepository.save(user);
         log.debug("Caching user with username: {}", user.getUsername());
-        userRedisService.cacheUser(savedUser);
+        userRedisService.cacheUserDto(userMapper.toUserDto(savedUser));
         userRedisService.cacheUsernameToId(savedUser.getUsername(), savedUser.getId());
     }
 
@@ -225,7 +225,7 @@ public class UserService {
     }
 
     private void cacheUserAndIdMapping(User user) {
-        userRedisService.cacheUser(user);
+        userRedisService.cacheUserDto(userMapper.toUserDto(user));
         userRedisService.cacheUsernameToId(user.getUsername(), user.getId());
     }
 
@@ -267,7 +267,7 @@ public class UserService {
 
     private UserDto getAndCacheUserDtoByUsername(String username) {
         var user = findUserByUsername(username);
-        userRedisService.cacheUser(user);
+        userRedisService.cacheUserDto(userMapper.toUserDto(user));
         return userMapper.toUserDto(user);
     }
 }

@@ -29,8 +29,8 @@ public class ViewUserProfileResponse {
     private List<Long> storiesIds;
 
     @Schema(description = "Followers count", example = "100")
-    private long followersCount;
+    private int followersCount;
 
     @Schema(description = "Following count", example = "100")
-    private long followingCount;
+    private int followingCount;
 }

@@ -65,14 +65,10 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = COMMENTS_ENDPOINT;
 
-        executeInsideTransaction(() -> {
-            jdbcTemplate.execute(CLEAR_DB);
+        clearDbAndFlushRedis();
 
-            user = createUser("user");
-            post = createPost(user, "title", "description");
-
-            return null;
-        });
+        user = createUser("user");
+        post = createPost(user, "title", "description");
 
         token = jwtService.generateToken(user);
     }
@@ -443,8 +439,6 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         var anotherToken = jwtService.generateToken(anotherUser);
 
         var editCommentRequest = EditCommentRequest.builder().updatedBody("new text").build();
-
-        System.out.println("test " + user.getId() + " " + anotherUser.getId());
 
         given()
                 .contentType(ContentType.JSON)

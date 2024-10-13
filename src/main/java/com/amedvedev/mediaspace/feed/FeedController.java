@@ -2,7 +2,7 @@ package com.amedvedev.mediaspace.feed;
 
 import com.amedvedev.mediaspace.post.PostService;
 import com.amedvedev.mediaspace.story.StoryService;
-import com.amedvedev.mediaspace.story.dto.ViewStoriesFeedResponse;
+import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,7 @@ public class FeedController {
 
     @GetMapping("/stories")
     @ResponseStatus(HttpStatus.OK)
-    public List<ViewStoriesFeedResponse> getStoriesFeed() {
+    public List<StoryPreviewResponse> getStoriesFeed() {
         return storyService.getStoriesFeed();
     }
 

@@ -3,6 +3,8 @@ package com.amedvedev.mediaspace.story;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
 import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
+import com.amedvedev.mediaspace.story.dto.StoryDto;
+import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,7 +44,7 @@ public class StoryController {
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ViewStoryResponse createStory(@Valid @RequestBody CreateStoryRequest request) {
+    public StoryDto createStory(@Valid @RequestBody CreateStoryRequest request) {
         return storyService.createStory(request);
     }
 
@@ -50,7 +52,7 @@ public class StoryController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Story found",
-                    content = @Content(schema = @Schema(implementation = ViewStoryResponse.class))
+                    content = @Content(schema = @Schema(implementation = StoryDto.class))
             ),
             @ApiResponse(
                     responseCode = "401", description = "Unauthorized",
@@ -71,7 +73,7 @@ public class StoryController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200", description = "Stories found",
-                    content = @Content(schema = @Schema(implementation = ViewStoryResponse.class))
+                    content = @Content(schema = @Schema(implementation = StoryDto.class))
             ),
             @ApiResponse(
                     responseCode = "401", description = "Unauthorized",
@@ -84,11 +86,28 @@ public class StoryController {
     })
     @GetMapping("/user/{username}")
     @ResponseStatus(HttpStatus.OK)
-    public List<ViewStoryResponse> getStoriesOfUser(@PathVariable String username) {
-        return storyService.getStoriesOfUser(username);
+    public List<StoryPreviewResponse> getStoriesOfUser(@PathVariable String username) {
+        return storyService.getStoryPreviewsOfUser(username);
     }
 
-    public List<ViewStoryResponse> getStoriesOfCurrentUser() {
+    @Operation(summary = "Get all stories of the current user")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "Stories found",
+                    content = @Content(schema = @Schema(implementation = StoryDto.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404", description = "User has no stories",
+                    content = @Content(schema = @Schema(implementation = GeneralErrorResponse.class))
+            )
+    })
+    @GetMapping("/me")
+    @ResponseStatus(HttpStatus.OK)
+    public List<StoryPreviewResponse> getStoriesOfCurrentUser() {
         return storyService.getCurrentUserStories();
     }
 
