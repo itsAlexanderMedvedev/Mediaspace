@@ -41,7 +41,7 @@ class AuthenticationServiceTest {
     @Mock
     private AuthenticationManager authenticationManager;
 
-    MockitoSession mockitoSession;
+    private MockitoSession mockitoSession;
 
     @BeforeEach
     public void setUp() {

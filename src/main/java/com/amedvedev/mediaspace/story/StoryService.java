@@ -32,7 +32,7 @@ public class StoryService {
     private final StoryRedisService storyRedisService;
     private final ApplicationEventPublisher eventPublisher;
 
-    public static final int MAXIMUM_STORIES_COUNT = 30;
+    private static final int MAXIMUM_STORIES_COUNT = 30;
 
     @Transactional
     public StoryDto createStory(CreateStoryRequest request) {
@@ -97,24 +97,23 @@ public class StoryService {
 
     private List<StoryPreviewResponse> getStoryPreviewResponseList(Long userId) {
         var storiesIds = storyRedisService.getStoriesIdsForUser(userId);
+
         if (storiesIds.isEmpty()) {
             log.debug("No stories ids found in cache for constructing stories for user with id: {}", userId);
             log.debug("Retrieving stories from database for user with id: {}", userId);
+
             var stories = getStoriesByUserId(userId);
             if (stories.isEmpty()) {
                 log.warn("No stories found for user with id: {}", userId);
                 return List.of();
             }
+
             storyRedisService.cacheStoriesIdsForUser(userId, stories);
             return mapStoriesToStoryPreviewResponseList(stories);
         }
 
         log.debug("Constructing stories for user with id: {}", userId);
         return mapStoriesIdsToStoryPreviewResponses(storiesIds);
-    }
-
-    private List<StoryPreviewResponse> mapStoriesToStoryPreviewResponseList(List<Story> stories) {
-        return stories.stream().map(storyMapper::toStoryPreviewResponse).toList();
     }
 
     public List<Story> getStoriesByUserId(Long userId) {
@@ -165,6 +164,14 @@ public class StoryService {
         return mapStoriesIdsToStoryPreviewResponses(storiesIds);
     }
 
+    private List<Story> getStoriesFeed(User user) {
+        return storyRepository.findStoriesFeed(user.getId());
+    }
+
+    private List<StoryPreviewResponse> mapStoriesToStoryPreviewResponseList(List<Story> stories) {
+        return stories.stream().map(storyMapper::toStoryPreviewResponse).toList();
+    }
+
     private List<StoryPreviewResponse> mapStoriesIdsToStoryPreviewResponses(List<Long> storiesIds) {
         return storiesIds.stream()
                 .map(this::getStoryDtoById)
@@ -176,7 +183,7 @@ public class StoryService {
 
     private Optional<StoryDto> getStoryDtoById(Long id) {
         var cachedStory = storyRedisService.getStoryDtoById(id);
-        return cachedStory != null ? Optional.of(cachedStory) : findAndCacheStoryDto(id);
+        return cachedStory.isPresent() ? cachedStory : findAndCacheStoryDto(id);
     }
 
     private Optional<StoryDto> findAndCacheStoryDto(Long id) {
@@ -188,11 +195,7 @@ public class StoryService {
         }
         var storyDto = storyMapper.toStoryDto(story);
         storyRedisService.cacheStoryDto(id, storyDto);
-        return Optional.of(storyMapper.toStoryDto(story));
-    }
-
-    private List<Story> getStoriesFeed(User user) {
-        return storyRepository.findStoriesFeed(user.getId());
+        return Optional.of(storyDto);
     }
 
     private Story findStoryById(Long id) {
@@ -201,5 +204,9 @@ public class StoryService {
             log.warn("Story with id {} not found", id);
             return new StoryNotFoundException("Story not found");
         });
+    }
+
+    int getMaximumStoriesCount() {
+        return MAXIMUM_STORIES_COUNT;
     }
 }

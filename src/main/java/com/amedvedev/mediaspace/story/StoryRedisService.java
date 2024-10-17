@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,17 @@ public class StoryRedisService {
         redisTemplate.opsForValue().set(key, storyDto);
     }
 
+    public Optional<StoryDto> getStoryDtoById(Long id) {
+        var key = STORY_PREFIX + id;
+        var storyDto = (StoryDto) redisTemplate.opsForValue().get(key);
+        return Optional.ofNullable(storyDto);
+    }
+
+    public void removeStoryDtoById(Long id) {
+        var key = STORY_PREFIX + id;
+        redisTemplate.delete(key);
+    }
+
     public void cacheStoriesIdsForUser(Long userId, List<Story> stories) {
         log.debug("Caching stories ids for user with id: {}", userId);
         var key = constructStoriesKey(userId);
@@ -40,19 +52,18 @@ public class StoryRedisService {
         redisTemplate.opsForZSet().add(key, storiesIdsTuples);
     }
 
+    public List<Long> getStoriesIdsForUser(Long userId) {
+        log.debug("Retrieving stories ids for user with id: {}", userId);
+        var key = constructStoriesKey(userId);
+        var storiesIds = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
+        return storiesIds == null ? List.of() : storyMapper.mapStoriesIdsObjectsToLong(storiesIds);
+    }
+
     public void cacheStoryIdToUserStories(Long userId, Story story) {
         var storyId = story.getId();
         log.debug("Caching story with id {} to user with id {}", storyId, userId);
         var key = constructStoriesKey(userId);
         redisTemplate.opsForZSet().add(key, storyId, story.getCreatedAt().toEpochMilli());
-    }
-
-    public List<Long> getStoriesIdsForUser(Long userId) {
-        log.debug("Retrieving stories ids for user with id: {}", userId);
-        var key = constructStoriesKey(userId);
-        redisTemplate.opsForValue().set("testkey", "testvalue");
-        var storiesIds = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
-        return storiesIds == null ? List.of() : storyMapper.mapStoriesIdsObjectsToLong(storiesIds);
     }
 
     public void removeStoryIdFromUserStories(Long userId, Long storyId) {
@@ -109,16 +120,6 @@ public class StoryRedisService {
         return stories.stream()
                 .map(story -> new DefaultTypedTuple<>((Object) story.getId(), (double) story.getCreatedAt().toEpochMilli()))
                 .collect(Collectors.toSet());
-    }
-
-    public StoryDto getStoryDtoById(Long id) {
-        var key = STORY_PREFIX + id;
-        return (StoryDto) redisTemplate.opsForValue().get(key);
-    }
-
-    public void removeStoryDtoById(Long id) {
-        var key = STORY_PREFIX + id;
-        redisTemplate.delete(key);
     }
 
     private String constructStoriesFeedKey(Long userId) {
