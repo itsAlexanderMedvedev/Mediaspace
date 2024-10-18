@@ -1,7 +1,7 @@
 package com.amedvedev.mediaspace.story.listener;
 
 import com.amedvedev.mediaspace.story.StoryMapper;
-import com.amedvedev.mediaspace.story.StoryRedisService;
+import com.amedvedev.mediaspace.story.service.StoryRedisService;
 import com.amedvedev.mediaspace.story.event.StoryCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public class StoryCacheListener {
         var story = event.getStory();
         log.debug("Received story created event for story with id: {}", story.getId());
         var storyDto = storyMapper.toStoryDto(story);
-        storyRedisService.cacheStoryDto(story.getId(), storyDto);
+        storyRedisService.cacheStoryDto(storyDto);
         storyRedisService.cacheStoryIdToUserStories(story.getUser().getId(), story);
     }
 }

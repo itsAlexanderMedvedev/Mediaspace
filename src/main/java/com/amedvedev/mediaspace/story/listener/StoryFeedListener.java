@@ -1,7 +1,6 @@
 package com.amedvedev.mediaspace.story.listener;
 
-import com.amedvedev.mediaspace.story.StoryMapper;
-import com.amedvedev.mediaspace.story.StoryRedisService;
+import com.amedvedev.mediaspace.story.service.StoryRedisService;
 import com.amedvedev.mediaspace.story.event.StoryCreatedEvent;
 import com.amedvedev.mediaspace.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Component;
 public class StoryFeedListener {
 
     private final UserService userService;
-    private final StoryMapper storyMapper;
     private final StoryRedisService storyRedisService;
 
     @Async
@@ -25,6 +23,6 @@ public class StoryFeedListener {
         var story = event.getStory();
         var publisherId = story.getUser().getId();
         var followersIds = userService.getFollowersIdsByUserId(publisherId);
-        storyRedisService.addStoryIdToFollowersFeed(followersIds, story);
+        storyRedisService.addPublisherIdToFollowersFeed(followersIds, publisherId, story.getCreatedAt());
     }
 }

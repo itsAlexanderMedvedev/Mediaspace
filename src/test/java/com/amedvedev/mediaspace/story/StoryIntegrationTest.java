@@ -7,6 +7,7 @@ import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
 import com.amedvedev.mediaspace.story.dto.StoryDto;
 import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
+import com.amedvedev.mediaspace.story.service.StoryRedisService;
 import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserRepository;
@@ -17,8 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.http.HttpStatus;
+
+import java.time.Instant;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,9 +29,10 @@ import static org.hamcrest.Matchers.equalTo;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class StoryIntegrationTest extends AbstractIntegrationTest {
 
-    public static final String STORIES_ENDPOINT = "/api/stories";
-    public static final String ID_ENDPOINT = "/{id}";
-    public static final String USER_USERNAME_ENDPOINT = "/user/{username}";
+    private static final String STORIES_ENDPOINT = "/api/stories";
+    private static final String ID_ENDPOINT = "/{id}";
+    private static final String USER_USERNAME_ENDPOINT = "/user/{username}";
+
     @LocalServerPort
     private Integer port;
 
@@ -40,13 +43,17 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     private StoryRepository storyRepository;
 
     @Autowired
+    private StoryRedisService storyRedisService;
+
+    @Autowired
+    private StoryMapper storyMapper;
+
+    @Autowired
     private JwtService jwtService;
 
     private User user;
 
     private String token;
-
-
 
     @BeforeEach
     void setUp() {
@@ -82,6 +89,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getMediaUrl()).isEqualTo(request.getCreateMediaRequest().getUrl());
+        assertThat(storyRedisService.getStoryDtoById(response.getId())).isNotNull();
+        assertThat(storyRedisService.getStoriesIdsForUser(user.getId())).containsExactly(1L);
     }
 
     @Test
@@ -121,6 +130,25 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void getStoryByIdFromCache() {
+        var storyDto = StoryDto.builder().id(1L).mediaUrl("https://example.com").username("user").build();
+
+        storyRedisService.cacheStoryDto(storyDto);
+
+        var response = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(ID_ENDPOINT, storyDto.getId())
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .as(ViewStoryResponse.class);
+
+
+        assertThat(response.getUsername()).isEqualTo(user.getUsername());
+        assertThat(response.getMediaUrl()).isEqualTo(storyDto.getMediaUrl());
+    }
+
+    @Test
     void shouldNotGetStoryByIdWhenStoryNotFound() {
         given()
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
@@ -145,6 +173,54 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .getList(".", StoryPreviewResponse.class);
 
         assertThat(response).hasSize(2);
+    }
+
+    @Test
+    void shouldGetStoriesOfUserFromCache() {
+        var story1 = Story.builder().id(1L).media(Media.builder().url("https://example.com").build()).createdAt(Instant.now()).build();
+        var story2 = Story.builder().id(2L).media(Media.builder().url("https://example.com").build()).createdAt(Instant.now()).build();
+
+        storyRedisService.cacheStoryIdToUserStories(user.getId(), story1);
+        storyRedisService.cacheStoryIdToUserStories(user.getId(), story2);
+        storyRedisService.cacheStoryDto(storyMapper.toStoryDto(story1));
+        storyRedisService.cacheStoryDto(storyMapper.toStoryDto(story2));
+
+        var response = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(USER_USERNAME_ENDPOINT, user.getUsername())
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoryPreviewResponse.class);
+
+        assertThat(response).hasSize(2);
+        assertThat(response.get(0).getStoryId()).isEqualTo(story2.getId()); // latest story first
+        assertThat(response.get(1).getStoryId()).isEqualTo(story1.getId());
+    }
+
+    @Test
+    void shouldGetStoriesOfUserFromCacheWhenIdIsCachedAndDtoIsNot() {
+        var story1 = createStory();
+        var story2 = createStory();
+
+        var savedStory1 = storyRepository.save(story1);
+        var savedStory2 = storyRepository.save(story2);
+        storyRedisService.cacheStoryIdToUserStories(user.getId(), savedStory1);
+        storyRedisService.cacheStoryIdToUserStories(user.getId(), savedStory2);
+
+        var response = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .get(USER_USERNAME_ENDPOINT, user.getUsername())
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoryPreviewResponse.class);
+
+        assertThat(response).hasSize(2);
+        assertThat(response.get(0).getStoryId()).isEqualTo(story2.getId()); // latest story first
+        assertThat(response.get(1).getStoryId()).isEqualTo(story1.getId());
     }
 
     @Test

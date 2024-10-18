@@ -6,6 +6,8 @@ import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
 import com.amedvedev.mediaspace.story.dto.StoryDto;
 import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
+import com.amedvedev.mediaspace.story.service.StoryManagingService;
+import com.amedvedev.mediaspace.story.service.StoryViewService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,7 +27,8 @@ import java.util.List;
 @Tag(name = "Story", description = "Endpoints for managing stories")
 public class StoryController {
 
-    private final StoryService storyService;
+    private final StoryManagingService storyManagingService;
+    private final StoryViewService storyViewService;
 
     @Operation(summary = "Create a new story. (max 30 per user)")
     @ApiResponses(value = {
@@ -45,7 +48,7 @@ public class StoryController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public StoryDto createStory(@Valid @RequestBody CreateStoryRequest request) {
-        return storyService.createStory(request);
+        return storyManagingService.createStory(request);
     }
 
     @Operation(summary = "Get a story by ID")
@@ -66,7 +69,7 @@ public class StoryController {
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ViewStoryResponse getStoryById(@PathVariable Long id) {
-        return storyService.getViewStoryResponseByStoryId(id);
+        return storyViewService.getViewStoryResponseByStoryId(id);
     }
 
     @Operation(summary = "Get all stories of a user")
@@ -87,7 +90,7 @@ public class StoryController {
     @GetMapping("/user/{username}")
     @ResponseStatus(HttpStatus.OK)
     public List<StoryPreviewResponse> getStoriesOfUser(@PathVariable String username) {
-        return storyService.getStoryPreviewsOfUser(username);
+        return storyViewService.getStoryPreviewsOfUser(username);
     }
 
     @Operation(summary = "Get all stories of the current user")
@@ -108,7 +111,7 @@ public class StoryController {
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
     public List<StoryPreviewResponse> getStoriesOfCurrentUser() {
-        return storyService.getCurrentUserStories();
+        return storyViewService.getCurrentUserStories();
     }
 
     @Operation(summary = "Delete a story")
@@ -128,7 +131,7 @@ public class StoryController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteStory(@PathVariable Long id) {
-        storyService.deleteStory(id);
+        storyManagingService.deleteStory(id);
     }
 }
 

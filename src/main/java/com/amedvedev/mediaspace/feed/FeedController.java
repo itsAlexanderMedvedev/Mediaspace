@@ -1,8 +1,9 @@
 package com.amedvedev.mediaspace.feed;
 
 import com.amedvedev.mediaspace.post.PostService;
-import com.amedvedev.mediaspace.story.StoryService;
+import com.amedvedev.mediaspace.story.service.StoryManagingService;
 import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
+import com.amedvedev.mediaspace.story.service.StoryViewService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,12 +21,12 @@ import java.util.List;
 public class FeedController {
 
     private final PostService postService;
-    private final StoryService storyService;
+    private final StoryViewService storyViewService;
 
     @GetMapping("/stories")
     @ResponseStatus(HttpStatus.OK)
     public List<StoryPreviewResponse> getStoriesFeed() {
-        return storyService.getStoriesFeed();
+        return storyViewService.getStoriesFeed();
     }
 
 //    @GetMapping("/posts")
