@@ -21,7 +21,7 @@ import java.util.Optional;
 public class StoryViewService {
 
     private final StoryMapper storyMapper;
-    private final StoryManagingService storyManagingService;
+    private final StoryManagementService storyManagementService;
     private final StoryRepository storyRepository;
     private final StoryRedisService storyRedisService;
     private final UserService userService;
@@ -84,7 +84,7 @@ public class StoryViewService {
 
         if (storiesIds.isEmpty()) {
             log.debug("No stories ids found in cache for constructing stories for user with id: {}", userId);
-            var stories = storyManagingService.getStoriesByUserId(userId);
+            var stories = storyManagementService.getStoriesByUserId(userId);
 
             if (stories.isEmpty()) {
                 log.warn("No stories found for user with id: {}", userId);
@@ -120,7 +120,7 @@ public class StoryViewService {
     private Optional<StoryDto> findAndCacheStoryDto(Long id) {
         Story story;
         try {
-            story = storyManagingService.findStoryById(id);
+            story = storyManagementService.findStoryById(id);
         } catch (StoryNotFoundException e) {
             return Optional.empty();
         }

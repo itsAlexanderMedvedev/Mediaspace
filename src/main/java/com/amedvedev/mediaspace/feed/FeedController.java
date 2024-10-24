@@ -1,7 +1,6 @@
 package com.amedvedev.mediaspace.feed;
 
 import com.amedvedev.mediaspace.post.PostService;
-import com.amedvedev.mediaspace.story.service.StoryManagingService;
 import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.service.StoryViewService;
 import io.swagger.v3.oas.annotations.tags.Tag;

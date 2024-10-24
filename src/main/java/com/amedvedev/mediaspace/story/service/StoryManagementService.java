@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StoryManagingService {
+public class StoryManagementService {
 
     private final UserService userService;
     private final StoryRepository storyRepository;
@@ -32,7 +32,7 @@ public class StoryManagingService {
     private final StoryRedisService storyRedisService;
     private final ApplicationEventPublisher eventPublisher;
 
-    public static final int MAXIMUM_STORIES_COUNT = 30;
+    private static final int MAXIMUM_STORIES_COUNT = 30;
 
     @Transactional
     public StoryDto createStory(CreateStoryRequest request) {
