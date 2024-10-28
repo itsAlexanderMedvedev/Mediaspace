@@ -60,7 +60,7 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = STORIES_ENDPOINT;
 
-        clearDbAndFlushRedis();
+        clearDbAndRedis();
 
         user = userRepository.save(User.builder().username("user").password("encoded-password").build());
         token = jwtService.generateToken(user);

@@ -5,6 +5,8 @@ import com.amedvedev.mediaspace.exception.handler.GlobalExceptionHandler;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.ChangeUsernameRequest;
 import com.amedvedev.mediaspace.user.dto.UpdateUserResponse;
+import com.amedvedev.mediaspace.user.service.UserProfileService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -2,7 +2,7 @@ package com.amedvedev.mediaspace.story.listener;
 
 import com.amedvedev.mediaspace.story.service.StoryRedisService;
 import com.amedvedev.mediaspace.story.event.StoryCreatedEvent;
-import com.amedvedev.mediaspace.user.UserService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;

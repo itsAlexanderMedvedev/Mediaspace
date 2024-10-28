@@ -22,7 +22,7 @@ public class JwtService {
 
     private final SecretKey secretKey;
 
-    private final int defaultTokenExpiration = 1000 * 60 * 60;  // one hour
+    private static final int DEFAULT_TOKEN_EXPIRATION_MILLIS = 1000 * 60 * 60;  // one hour
 
     public JwtService(@Value("${jwt.secret-key}") String secretKey) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
@@ -47,12 +47,12 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> claims, UserDetails userDetails) {
-        return generateToken(claims, userDetails, defaultTokenExpiration);
+        return generateToken(claims, userDetails, DEFAULT_TOKEN_EXPIRATION_MILLIS);
     }
 
     public String generateToken(UserDetails userDetails) {
         log.info("Generating token for user: {}", userDetails.getUsername());
-        return generateToken(new HashMap<>(), userDetails, defaultTokenExpiration);
+        return generateToken(new HashMap<>(), userDetails, DEFAULT_TOKEN_EXPIRATION_MILLIS);
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {

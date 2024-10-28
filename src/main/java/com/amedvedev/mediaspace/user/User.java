@@ -28,11 +28,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "_user")
+@ToString(onlyExplicitlyIncluded = true)
 @SQLRestriction(value = "is_deleted<>'TRUE'")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User implements UserDetails {
 
     @Id
+    @ToString.Include
     @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -41,6 +43,7 @@ public class User implements UserDetails {
     @JoinColumn(name = "profile_picture_id")
     private Media profilePicture;
 
+    @ToString.Include
     @Column(name = "username", nullable = false, length = 20, unique = true)
     private String username;
 
@@ -130,3 +133,5 @@ public class User implements UserDetails {
         user.followers.remove(this);
     }
 }
+
+

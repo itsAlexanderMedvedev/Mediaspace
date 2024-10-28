@@ -16,7 +16,6 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import javax.swing.text.html.parser.Entity;
 import java.util.concurrent.Callable;
 
 public abstract class AbstractIntegrationTest {
@@ -32,7 +31,7 @@ public abstract class AbstractIntegrationTest {
     protected EntityManager entityManager;
 
     @Autowired
-    private PlatformTransactionManager transactionManager;
+    protected PlatformTransactionManager transactionManager;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -65,6 +64,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.data.redis.port", redis::getRedisPort);
     }
 
+    // This method is needed for the case where the test is run with @Transactional
+    // and if we want to insert some data into the database we interrupt the transaction,
+    // insert data and then start a new transaction 
     protected <T> T executeInsideTransaction(Callable<T> callable) {
         var transactionExisted = TestTransaction.isActive();
         if (transactionExisted) TestTransaction.end();
@@ -84,7 +86,7 @@ public abstract class AbstractIntegrationTest {
         }
     }
 
-    protected void clearDbAndFlushRedis() {
+    protected void clearDbAndRedis() {
         executeInsideTransaction(() -> {
             jdbcTemplate.execute(CLEAR_DB);
             return null;

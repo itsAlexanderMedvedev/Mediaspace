@@ -5,7 +5,7 @@ import com.amedvedev.mediaspace.auth.dto.LoginResponse;
 import com.amedvedev.mediaspace.auth.dto.RegisterRequest;
 import com.amedvedev.mediaspace.user.exception.UsernameAlreadyExistsException;
 import com.amedvedev.mediaspace.user.User;
-import com.amedvedev.mediaspace.user.UserService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

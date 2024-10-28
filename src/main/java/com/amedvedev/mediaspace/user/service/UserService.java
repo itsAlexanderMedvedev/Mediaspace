@@ -1,10 +1,14 @@
-package com.amedvedev.mediaspace.user;
+package com.amedvedev.mediaspace.user.service;
 
+import com.amedvedev.mediaspace.user.User;
+import com.amedvedev.mediaspace.user.UserMapper;
+import com.amedvedev.mediaspace.user.UserRepository;
 import com.amedvedev.mediaspace.user.dto.*;
 import com.amedvedev.mediaspace.user.exception.FollowException;
 import com.amedvedev.mediaspace.user.exception.UserIsNotDeletedException;
 import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
+import com.amedvedev.mediaspace.user.follow.FollowRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -23,12 +27,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final UserRedisService userRedisService;
+    private final FollowRepository followRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public User getCurrentUser() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.debug("Retrieving user from token directly from database with username: {}", username);
+        log.debug("Retrieving user from token with username: {}", username);
 
         return userRepository.findByUsernameIgnoreCase(username).orElseThrow(
                 () -> new UserNotFoundException("Authentication object is invalid or does not contain a username"));
@@ -115,18 +120,18 @@ public class UserService {
 
     public int getFollowersCount(Long id) {
         log.debug("Getting followers count for user with id: {}", id);
-        return userRedisService.getFollowersCount(id).orElseGet(() -> userRepository.countFollowersByUserId(id));
+        return userRedisService.getFollowersCount(id).orElseGet(() -> followRepository.countFollowersByUserId(id));
     }
 
     public int getFollowingCount(Long id) {
         log.debug("Getting following count for user with id: {}", id);
-        return userRedisService.getFollowingCount(id).orElseGet(() -> userRepository.countFollowingByUserId(id));
+        return userRedisService.getFollowingCount(id).orElseGet(() -> followRepository.countFollowingByUserId(id));
     }
 
     @Transactional(readOnly = true)
     public List<Long> getFollowersIdsByUserId(Long id) {
         log.debug("Getting followers for user with id: {}", id);
-        return userRepository.findFollowersIdsByUserId(id);
+        return followRepository.findFollowersIdsByUserId(id);
     }
 
     @Transactional

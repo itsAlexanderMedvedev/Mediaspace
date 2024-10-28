@@ -1,9 +1,10 @@
-package com.amedvedev.mediaspace.user;
+package com.amedvedev.mediaspace.user.service;
 
 import com.amedvedev.mediaspace.post.PostMapper;
 import com.amedvedev.mediaspace.post.PostService;
 import com.amedvedev.mediaspace.post.dto.UserProfilePostResponse;
 import com.amedvedev.mediaspace.story.service.StoryManagementService;
+import com.amedvedev.mediaspace.user.UserMapper;
 import com.amedvedev.mediaspace.user.dto.UserDto;
 import com.amedvedev.mediaspace.user.dto.ViewUserProfileResponse;
 import lombok.RequiredArgsConstructor;

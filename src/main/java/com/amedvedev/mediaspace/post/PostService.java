@@ -10,7 +10,7 @@ import com.amedvedev.mediaspace.post.like.Like;
 import com.amedvedev.mediaspace.post.like.LikeId;
 import com.amedvedev.mediaspace.post.like.exception.PostNotLikedException;
 import com.amedvedev.mediaspace.user.User;
-import com.amedvedev.mediaspace.user.UserService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import com.amedvedev.mediaspace.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

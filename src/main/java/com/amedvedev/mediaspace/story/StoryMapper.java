@@ -34,11 +34,6 @@ public interface StoryMapper {
     @Mapping(target = "createdAt", source = "createdAt", dateFormat = "dd.MM.yyyy HH:mm")
     StoryDto toStoryDto(Story story);
 
-    @Named("getProfilePicture")
-    default String getProfilePicture(Media profilePicture) {
-        return profilePicture == null ? null : profilePicture.getUrl();
-    }
-
     default List<Long> mapStoriesIdsObjectsToLong(Collection<Object> stories) {
         return stories.stream()
                 .map(String::valueOf)

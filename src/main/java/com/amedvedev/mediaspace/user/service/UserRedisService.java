@@ -1,5 +1,6 @@
-package com.amedvedev.mediaspace.user;
+package com.amedvedev.mediaspace.user.service;
 
+import com.amedvedev.mediaspace.user.UserMapper;
 import com.amedvedev.mediaspace.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

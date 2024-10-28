@@ -11,7 +11,7 @@ import com.amedvedev.mediaspace.story.event.StoryCreatedEvent;
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
 import com.amedvedev.mediaspace.user.User;
-import com.amedvedev.mediaspace.user.UserService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;

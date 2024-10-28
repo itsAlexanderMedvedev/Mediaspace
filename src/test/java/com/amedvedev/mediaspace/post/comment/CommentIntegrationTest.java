@@ -65,7 +65,7 @@ public class CommentIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = COMMENTS_ENDPOINT;
 
-        clearDbAndFlushRedis();
+        clearDbAndRedis();
 
         user = createUser("user");
         post = createPost(user, "title", "description");

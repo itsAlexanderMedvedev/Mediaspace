@@ -17,7 +17,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -63,7 +62,7 @@ public class UserIntegrationTest extends AbstractIntegrationTest {
         RestAssured.port = port;
         RestAssured.basePath = USERS_ENDPOINT;
 
-        clearDbAndFlushRedis();
+        clearDbAndRedis();
 
         user = userRepository.save(User.builder().username("user").password(passwordEncoder.encode("password")).build());
         token = jwtService.generateToken(user);

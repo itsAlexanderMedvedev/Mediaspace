@@ -6,7 +6,7 @@ import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
 import com.amedvedev.mediaspace.user.User;
-import com.amedvedev.mediaspace.user.UserService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,17 +29,24 @@ public class StoryViewService {
     @Transactional(readOnly = true)
     public List<StoryPreviewResponse> getStoriesFeed() {
         var user = userService.getCurrentUser();
+        log.info("Retrieving stories feed for user: {}", user.getUsername());
         var storiesIds = storyRedisService.getFeedStoriesIdForUser(user.getId());
 
         if (storiesIds.isEmpty()) {
-            log.debug("No stories ids found in cache for constructing stories feed for user with id: {}", user.getId());
-            var stories = getStoriesFeed(user);
-            storyRedisService.cacheFeedStoriesIdsForUser(user.getId(), stories);
-            return mapStoriesToStoryPreviewResponseList(stories);
+            return getStoriesFromDbAndCache(user);
         }
 
         log.debug("Constructing stories feed for user with id: {}", user.getId());
         return mapStoriesIdsToStoryPreviewResponses(storiesIds);
+    }
+
+    private List<StoryPreviewResponse> getStoriesFromDbAndCache(User user) {
+        log.debug("No stories ids found in cache for constructing stories feed for user with id: {}", user.getId());
+        var stories = getStoriesFeed(user);
+        if (!stories.isEmpty()) {
+            storyRedisService.cacheFeedStoriesIdsForUser(user.getId(), stories);
+        }
+        return mapStoriesToStoryPreviewResponseList(stories);
     }
 
     private List<Story> getStoriesFeed(User user) {
@@ -114,7 +121,12 @@ public class StoryViewService {
 
     private Optional<StoryDto> getStoryDtoById(Long id) {
         var cachedStory = storyRedisService.getStoryDtoById(id);
-        return cachedStory.isPresent() ? cachedStory : findAndCacheStoryDto(id);
+        if (cachedStory.isPresent()) {
+            log.debug("Story with id {} found in cache", id);
+            return cachedStory;
+        }
+        log.debug("Story with id {} not found in cache", id);
+        return findAndCacheStoryDto(id);
     }
 
     private Optional<StoryDto> findAndCacheStoryDto(Long id) {
@@ -122,10 +134,11 @@ public class StoryViewService {
         try {
             story = storyManagementService.findStoryById(id);
         } catch (StoryNotFoundException e) {
+            log.warn("Story with id {} not found", id);
             return Optional.empty();
         }
         var storyDto = storyMapper.toStoryDto(story);
         storyRedisService.cacheStoryDto(storyDto);
-        return Optional.of(storyMapper.toStoryDto(story));
+        return Optional.of(storyDto);
     }
 }

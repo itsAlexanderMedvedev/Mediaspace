@@ -3,6 +3,8 @@ package com.amedvedev.mediaspace.user;
 import com.amedvedev.mediaspace.user.dto.*;
 import com.amedvedev.mediaspace.exception.dto.GeneralErrorResponse;
 import com.amedvedev.mediaspace.exception.dto.ValidationErrorResponse;
+import com.amedvedev.mediaspace.user.service.UserProfileService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

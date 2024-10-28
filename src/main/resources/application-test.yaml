@@ -1,3 +1,14 @@
 spring:
     liquibase:
         drop-first: true
+        
+logging:
+    level:
+        org.springframework: info
+        org.springframework.web: info
+        org.springframework.security: info
+        org.springframework.validation: info
+        #        org.hibernate: DEBUG
+        root: INFO
+        com.amedvedev.mediaspace: DEBUG
+#        com.zaxxer.hikari: DEBUG

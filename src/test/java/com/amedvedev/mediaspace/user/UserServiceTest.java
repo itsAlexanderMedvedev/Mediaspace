@@ -1,10 +1,10 @@
 package com.amedvedev.mediaspace.user;
 
 import com.amedvedev.mediaspace.user.dto.ChangePasswordRequest;
-import com.amedvedev.mediaspace.user.dto.UserDto;
-import com.amedvedev.mediaspace.user.exception.UserNotFoundException;
 import com.amedvedev.mediaspace.user.dto.ChangeUsernameRequest;
 import com.amedvedev.mediaspace.user.exception.UserUpdateException;
+import com.amedvedev.mediaspace.user.service.UserRedisService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

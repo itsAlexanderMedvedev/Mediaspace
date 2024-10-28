@@ -8,7 +8,7 @@ import com.amedvedev.mediaspace.post.comment.dto.EditCommentRequest;
 import com.amedvedev.mediaspace.post.comment.dto.ViewCommentResponse;
 import com.amedvedev.mediaspace.post.comment.dto.ViewPostCommentsResponse;
 import com.amedvedev.mediaspace.post.comment.exception.CommentNotFoundException;
-import com.amedvedev.mediaspace.user.UserService;
+import com.amedvedev.mediaspace.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

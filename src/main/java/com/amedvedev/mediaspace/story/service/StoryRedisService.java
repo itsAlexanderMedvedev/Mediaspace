@@ -40,11 +40,13 @@ public class StoryRedisService {
     }
 
     public Optional<StoryDto> getStoryDtoById(Long id) {
+        log.debug("Retrieving story with id: {}", id);
         var key = STORY_PREFIX + id;
         return Optional.ofNullable((StoryDto) redisTemplate.opsForValue().get(key));
     }
 
     public void removeStoryDtoById(Long id) {
+        log.debug("Removing story with id: {}", id);
         var key = STORY_PREFIX + id;
         redisTemplate.delete(key);
     }

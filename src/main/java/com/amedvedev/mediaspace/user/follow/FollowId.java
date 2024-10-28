@@ -18,5 +18,5 @@ public class FollowId implements Serializable {
     private Long followerId;
 
     @Column(name = "followee_id")
-    private Integer followeeId;
+    private Long followeeId;
 }
