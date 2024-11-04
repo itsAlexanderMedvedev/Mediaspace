@@ -6,6 +6,7 @@ import com.amedvedev.mediaspace.story.dto.StoryDto;
 import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
+import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,20 +32,19 @@ public class StoryViewService {
         var user = userService.getCurrentUser();
         log.info("Retrieving stories feed for user: {}", user.getUsername());
         
-        var storiesFeedResponses = storyRedisService.getStoriesFeedByUserId(user.getId());
-        if (!storiesFeedResponses.isEmpty()) {
+        var storiesFeedResponsesOptional = storyRedisService.getStoriesFeedByUserId(user.getId());
+        if (storiesFeedResponsesOptional.isPresent()) {
             log.debug("Stories feed found in cache for user with id: {}", user.getId());
-            return storiesFeedResponses;
+            return storiesFeedResponsesOptional.get();
         }
         
         log.debug("Stories feed not found in cache for user with id: {}", user.getId());
-        var storyFeedProjections = storyRepository.findStoryFeedByUserId(user.getId());
-        if (storyFeedProjections.isEmpty()) {
-            log.warn("Feed of user with id {} is empty", user.getId());
-            return Collections.emptySet();
-        }
+        return getStoriesFromDb(user);
+    }
 
-        storiesFeedResponses = storyFeedProjections.stream()
+    private Set<StoriesFeedEntry> getStoriesFromDb(User user) {
+        var storyFeedProjections = storyRepository.findStoryFeedByUserId(user.getId());
+        var storiesFeedResponses = storyFeedProjections.stream()
                 .map(storyMapper::toStoryFeedResponse)
                 .collect(Collectors.toSet());
         storyRedisService.cacheStoriesFeedByUserId(user.getId(), storiesFeedResponses);

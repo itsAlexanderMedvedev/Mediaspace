@@ -93,12 +93,12 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
         token4 = jwtService.generateToken(user4);
     }
 
-    private StoryDto createStoryForUser(String token) {
+    private void createStoryForUser(String token) {
         var createStoryRequest = CreateStoryRequest.builder()
                 .createMediaRequest(CreateMediaRequest.builder().url("https://example.com").build())
                 .build();
 
-        return given()
+        given()
                 .contentType(ContentType.JSON)
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .body(createStoryRequest)
@@ -116,10 +116,15 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .post(FOLLOW_ENDPOINT, followee.getUsername())
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
+    }
 
-        System.out.println("FOLLOWED");
+    private void waitForAsyncStoryCache() {
+        await()
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> storyRedisService.getStoriesFeedByUserId(user1.getId())
+                        .map(feed -> feed.size() == 2)
+                        .orElse(false));
     }
 
     @Test
@@ -141,13 +146,10 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .username(user3.getUsername())
                 .profilePictureUrl(user3.getProfilePictureUrl())
                 .build();
+        
+        waitForAsyncStoryCache();
 
-        // wait for stories to be cached as it is done asynchronously
-        await()
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> storyRedisService.getStoriesFeedByUserId(user1.getId()).size() == 2);
-
-
+        
         var feed1 = given()
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
                 .when()
@@ -184,13 +186,42 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void emptyStoriesFeedIsStillCachedAfterFirstFetchAttempt() {
+        followUserWithRequest(token1, user2);
+        followUserWithRequest(token1, user3);
+        followUserWithRequest(token1, user4);
+
+        var feed1 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+
+        var feed2 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+
+        assertThat(feed1).isEmpty();
+        assertThat(feed2).isEmpty();
+    }
+
+    @Test
     void getStoriesFeedIsEmptyWhenNoOneIsFollowed() {
         var feed1 = given()
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
                 .when()
                 .get(STORIES_FEED_ENDPOINT)
                 .then()
-                .log().all()
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .jsonPath()
@@ -218,10 +249,8 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .username(user3.getUsername())
                 .profilePictureUrl(user3.getProfilePictureUrl())
                 .build();
-        
-        await()
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> storyRedisService.getStoriesFeedByUserId(user1.getId()).size() == 2);
+
+        waitForAsyncStoryCache();
         
         deleteStoriesFeedFromCacheForUser(user1);
         

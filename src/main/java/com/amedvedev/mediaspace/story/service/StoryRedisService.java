@@ -25,13 +25,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StoryRedisService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final StoryMapper storyMapper;
-
     private static final String STORY_PREFIX = "story:";
     private static final String USER_PREFIX = "user:";
     private static final String STORIES_FEED_SUFFIX = ":stories_feed";
     private static final String STORIES_SUFFIX = ":stories";
+    private static final String EMPTY_FEED_MARKER = "EMPTY_FEED";
+    private static final Optional<Set<StoriesFeedEntry>> EMPTY_FEED = Optional.of(Set.of());
+    
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final StoryMapper storyMapper;
 
     public void cacheStoryDto(StoryDto storyDto) {
         var id = storyDto.getId();
@@ -54,20 +56,45 @@ public class StoryRedisService {
     }
 
     public void cacheStoriesFeedByUserId(Long id, Set<StoriesFeedEntry> storiesFeedEntries) {
-        log.debug("Caching stories feed for user with id: {}", id);
         var key = constructStoriesFeedKey(id);
-        
+
+        if (storiesFeedEntries.isEmpty()) {
+            log.debug("Adding empty feed marker for user with id: {}", id);
+            redisTemplate.opsForZSet().add(key, EMPTY_FEED_MARKER, 0);
+            return;
+        }
+
+        log.debug("Caching stories feed for user with id: {}", id);
         var tuples = storyMapper.mapStoriesFeedProjectionsToTuples(storiesFeedEntries);
         redisTemplate.opsForZSet().add(key, tuples);
     }
 
-    public Set<StoriesFeedEntry> getStoriesFeedByUserId(Long id) {
-        log.debug("Retrieving stories feed for user with id: {}", id);
+    public Optional<Set<StoriesFeedEntry>> getStoriesFeedByUserId(Long id) {
+        log.debug("Looking for stories feed for user with id: {} in cache", id);
         var key = constructStoriesFeedKey(id);
-        System.out.println("LOOKING FOR KEY " + key);
-        var storiesFeedProjections = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
-        System.out.println("STORIES FEED PROJECTIONS: " + storiesFeedProjections);
-        return storiesFeedProjections == null ? Set.of() : storyMapper.mapTuplesToStoriesFeed(storiesFeedProjections);
+        var storiesFeedProjectionsObjects = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
+        
+        if (isFeedEmpty(storiesFeedProjectionsObjects)) {
+            log.debug("Empty feed marker found for user with id: {}", id);
+            return EMPTY_FEED;
+        }
+        
+        if (feedIsNotInCache(storiesFeedProjectionsObjects)) {
+            log.debug("No feed found in cache for user with id: {}", id);
+            return Optional.empty();
+        }
+        
+        return Optional.of(storyMapper.mapTuplesToStoriesFeed(storiesFeedProjectionsObjects));
+    }
+
+    private boolean feedIsNotInCache(Set<Object> storiesFeedProjectionsObjects) {
+        return storiesFeedProjectionsObjects == null || storiesFeedProjectionsObjects.isEmpty();
+    }
+
+    private boolean isFeedEmpty(Set<Object> storiesFeedProjectionsObjects) {
+        return storiesFeedProjectionsObjects != null
+                && storiesFeedProjectionsObjects.size() == 1
+                && storiesFeedProjectionsObjects.contains(EMPTY_FEED_MARKER);
     }
     
     public void cacheStoriesIdsForUser(Long userId, List<Long> storiesIds) {
@@ -81,7 +108,7 @@ public class StoryRedisService {
     public List<Long> getStoriesIdsForUser(Long userId) {
         log.debug("Retrieving stories ids for user with id: {}", userId);
         var key = constructStoriesKey(userId);
-        
+
         var storiesIds = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
         return storiesIds == null ? List.of() : storyMapper.mapStoriesIdsObjectsToLong(storiesIds);
     }
@@ -99,7 +126,7 @@ public class StoryRedisService {
         var key = constructStoriesKey(userId);
         redisTemplate.opsForZSet().remove(key, storyId);
     }
-    
+
     public void addFeedEntryToFollowersFeed(Long publisherId, StoriesFeedEntry feedEntry, List<Long> followersIds) {
         log.debug("Caching story publisher id {} to followers feeds", publisherId);
 
@@ -107,13 +134,10 @@ public class StoryRedisService {
             log.debug("No followers of user with id {} found", publisherId);
             return;
         }
-        
-        // KEYS [user:3, story:1, story:3, user:3:stories, user:1, story:2, user:2, user:4, user:2:stories]
-        System.out.println("FOLLOWERS IDS: " + followersIds);
+
         redisTemplate.executePipelined((RedisCallback<?>) connection -> {
             followersIds.forEach(id -> {
                 var key = constructStoriesFeedKey(id);
-                System.out.println("ADDING TO ZSET WITH KEY " + key);
                 addToRedisSortedSet(key, feedEntry, connection);
             });
             return null;
@@ -122,7 +146,7 @@ public class StoryRedisService {
 
     private void addToRedisSortedSet(String key, Object value, RedisConnection connection) {
         var keyBytes = redisTemplate.getStringSerializer().serialize(key);
-        
+
         // For some reason redisTemplate.getValueSerializer().serialize() doesnt work, although set in RedisConfig
         var valueSerializer = new GenericJackson2JsonRedisSerializer();
         var valueBytes = valueSerializer.serialize(value);
