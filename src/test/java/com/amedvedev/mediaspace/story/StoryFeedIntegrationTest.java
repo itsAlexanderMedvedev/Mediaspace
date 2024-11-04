@@ -1,16 +1,18 @@
 package com.amedvedev.mediaspace.story;
 
 import com.amedvedev.mediaspace.auth.JwtService;
-import com.amedvedev.mediaspace.media.Media;
-import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
+import com.amedvedev.mediaspace.media.dto.CreateMediaRequest;
+import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
+import com.amedvedev.mediaspace.story.dto.StoriesFeedEntry;
+import com.amedvedev.mediaspace.story.dto.StoryDto;
 import com.amedvedev.mediaspace.story.service.StoryRedisService;
 import com.amedvedev.mediaspace.testutil.AbstractIntegrationTest;
 import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserRepository;
 import com.amedvedev.mediaspace.user.follow.FollowRepository;
 import com.amedvedev.mediaspace.user.service.UserService;
-import io.lettuce.core.output.VoidOutput;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,16 +22,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.TimeUnit;
+
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 @Transactional
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String STORIES_FEED_ENDPOINT = "/api/feed/stories";
-    private static final String FOLLOW_ENDPOINT = "/api/users/{username}/follow";
+    private static final String STORIES_FEED_ENDPOINT = "/feed/stories";
+    private static final String FOLLOW_ENDPOINT = "/users/{username}/follow";
+    public static final String STORIES_ENDPOINT = "/stories";
 
     @LocalServerPort
     private Integer port;
@@ -68,6 +75,7 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        RestAssured.basePath = "/api";
 
         clearDbAndRedis();
 
@@ -85,9 +93,21 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
         token4 = jwtService.generateToken(user4);
     }
 
-    private Story createStoryForUser(User user) {
-        var media = Media.builder().url("https://example.com").build();
-        return executeInsideTransaction(() -> storyRepository.save(Story.builder().user(user).media(media).build()));
+    private StoryDto createStoryForUser(String token) {
+        var createStoryRequest = CreateStoryRequest.builder()
+                .createMediaRequest(CreateMediaRequest.builder().url("https://example.com").build())
+                .build();
+
+        return given()
+                .contentType(ContentType.JSON)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .body(createStoryRequest)
+                .when()
+                .post(STORIES_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.CREATED.value())
+                .extract()
+                .as(StoryDto.class);
     }
 
     private void followUserWithRequest(String token, User followee) {
@@ -96,7 +116,10 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .post(FOLLOW_ENDPOINT, followee.getUsername())
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value());
+
+        System.out.println("FOLLOWED");
     }
 
     @Test
@@ -106,9 +129,24 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
         followUserWithRequest(token1, user4); // user4 is not posting anything
         followUserWithRequest(token3, user2); // user3 is following user2, should not affect user1's feed
 
-        var story1 = createStoryForUser(user3);
-        var story2 = createStoryForUser(user3);
-        var story3 = createStoryForUser(user2);
+        createStoryForUser(token3);
+        createStoryForUser(token3);
+        createStoryForUser(token2);
+
+        var storiesFeedEntryUser2 = StoriesFeedEntry.builder()
+                .username(user2.getUsername())
+                .profilePictureUrl(user2.getProfilePictureUrl())
+                .build();
+        var storiesFeedEntryUser3 = StoriesFeedEntry.builder()
+                .username(user3.getUsername())
+                .profilePictureUrl(user3.getProfilePictureUrl())
+                .build();
+
+        // wait for stories to be cached as it is done asynchronously
+        await()
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> storyRedisService.getStoriesFeedByUserId(user1.getId()).size() == 2);
+
 
         var feed1 = given()
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
@@ -118,20 +156,20 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .jsonPath()
-                .getList(".", StoryPreviewResponse.class);
+                .getList(".", StoriesFeedEntry.class);
 
-        assertThat(feed1).hasSize(3);
-        assertThat(feed1.get(0)).isEqualTo(storyMapper.toStoryPreviewResponse(story3));
-        assertThat(feed1.get(1)).isEqualTo(storyMapper.toStoryPreviewResponse(story2));
-        assertThat(feed1.get(2)).isEqualTo(storyMapper.toStoryPreviewResponse(story1));
+
+        assertThat(feed1).hasSize(2);
+        assertThat(feed1.get(0)).isEqualTo(storiesFeedEntryUser2); // latest story goes first
+        assertThat(feed1.get(1)).isEqualTo(storiesFeedEntryUser3);
     }
-    
+
     @Test
     void getStoriesFeedIsEmptyWhenNoStoriesPosted() {
         followUserWithRequest(token1, user2);
         followUserWithRequest(token1, user3);
         followUserWithRequest(token1, user4);
-        
+
         var feed1 = given()
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
                 .when()
@@ -140,7 +178,7 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .jsonPath()
-                .getList(".", StoryPreviewResponse.class);
+                .getList(".", StoriesFeedEntry.class);
 
         assertThat(feed1).isEmpty();
     }
@@ -152,25 +190,39 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .when()
                 .get(STORIES_FEED_ENDPOINT)
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .jsonPath()
-                .getList(".", StoryPreviewResponse.class);
+                .getList(".", StoriesFeedEntry.class);
 
         assertThat(feed1).isEmpty();
     }
-    
+
     @Test
-    void getStoriesFeedIsTheSameWhenGotFromCache() {
+    void getStoriesFeedWhenNotFoundInCache() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         followUserWithRequest(token1, user2);
         followUserWithRequest(token1, user3);
         followUserWithRequest(token1, user4);
-        
-        var story1 = createStoryForUser(user3);
-        var story2 = createStoryForUser(user3);
-        var story3 = createStoryForUser(user2);
 
-        // nothing is cached yet
+        createStoryForUser(token2);
+        createStoryForUser(token3);
+
+        var storiesFeedEntryUser2 = StoriesFeedEntry.builder()
+                .username(user2.getUsername())
+                .profilePictureUrl(user2.getProfilePictureUrl())
+                .build();
+        var storiesFeedEntryUser3 = StoriesFeedEntry.builder()
+                .username(user3.getUsername())
+                .profilePictureUrl(user3.getProfilePictureUrl())
+                .build();
+        
+        await()
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> storyRedisService.getStoriesFeedByUserId(user1.getId()).size() == 2);
+        
+        deleteStoriesFeedFromCacheForUser(user1);
+        
         var feed1 = given()
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
                 .when()
@@ -179,45 +231,21 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .statusCode(HttpStatus.OK.value())
                 .extract()
                 .jsonPath()
-                .getList(".", StoryPreviewResponse.class);
+                .getList(".", StoriesFeedEntry.class);
 
-        assertThat(feed1).hasSize(3);
-        assertThat(feed1.get(0)).isEqualTo(storyMapper.toStoryPreviewResponse(story3));
-        assertThat(feed1.get(1)).isEqualTo(storyMapper.toStoryPreviewResponse(story2));
-        assertThat(feed1.get(2)).isEqualTo(storyMapper.toStoryPreviewResponse(story1));
-        
-        // only stories ids are cached
-        var feed2 = given()
-                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
-                .when()
-                .get(STORIES_FEED_ENDPOINT)
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract()
-                .jsonPath()
-                .getList(".", StoryPreviewResponse.class);
-
-        assertThat(feed2).hasSize(3);
-        assertThat(feed2.get(0)).isEqualTo(storyMapper.toStoryPreviewResponse(story3));
-        assertThat(feed2.get(1)).isEqualTo(storyMapper.toStoryPreviewResponse(story2));
-        assertThat(feed2.get(2)).isEqualTo(storyMapper.toStoryPreviewResponse(story1));
-        
-        // stories ids along with stories are cached
-        var feed3 = given()
-                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
-                .when()
-                .get(STORIES_FEED_ENDPOINT)
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract()
-                .jsonPath()
-                .getList(".", StoryPreviewResponse.class);
-        
-        assertThat(feed3).hasSize(3);
-        assertThat(feed3.get(0)).isEqualTo(storyMapper.toStoryPreviewResponse(story3));
-        assertThat(feed3.get(1)).isEqualTo(storyMapper.toStoryPreviewResponse(story2));
-        assertThat(feed3.get(2)).isEqualTo(storyMapper.toStoryPreviewResponse(story1));
+        assertThat(feed1).hasSize(2);
+        assertThat(feed1.get(0)).isEqualTo(storiesFeedEntryUser2);
+        assertThat(feed1.get(1)).isEqualTo(storiesFeedEntryUser3);
     }
-    
+
+    private void deleteStoriesFeedFromCacheForUser(User user)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+
+        var constructKeyMethod = StoryRedisService.class.getDeclaredMethod("constructStoriesFeedKey", Long.class);
+        constructKeyMethod.setAccessible(true);
+        var key = (String) constructKeyMethod.invoke(storyRedisService, user.getId());
+        redisTemplate.delete(key);
+    }
+
     // TODO: TEST FOR MODIFYING ALREADY CREATED STORIES
 }

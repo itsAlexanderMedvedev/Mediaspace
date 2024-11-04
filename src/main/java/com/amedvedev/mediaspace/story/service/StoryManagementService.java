@@ -57,7 +57,7 @@ public class StoryManagementService {
     }
 
     private static Story buildStory(CreateStoryRequest request, User user) {
-        log.debug("Building story from request");
+        log.trace("Building story from request");
 
         var media = Media.builder()
                 .url(request.getCreateMediaRequest().getUrl())
@@ -101,7 +101,8 @@ public class StoryManagementService {
         log.info("Retrieving stories from database of user with id: {}", userId);
         return storyRepository.findByUserId(userId);
     }
-
+    
+    // TODO: Is it needed? Maybe change to simply showing the stories count in user profile
     public List<Long> getStoriesIdsByUserId(Long userId) {
         log.info("Retrieving stories ids from database of user with id: {}", userId);
         return storyRepository.findStoriesIdsByUserId(userId);

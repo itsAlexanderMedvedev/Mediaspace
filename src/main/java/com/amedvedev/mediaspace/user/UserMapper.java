@@ -14,7 +14,7 @@ import java.util.List;
 @Mapper(componentModel = "spring", unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
 
-    @Mapping(target = "profilePictureUrl", source = "profilePicture", qualifiedByName = "getProfilePicture")
+    @Mapping(target = "profilePictureUrl", expression = "java(user.getProfilePictureUrl())")
     UserDto toUserDto(User user);
     
     ViewUserProfileResponse toViewUserProfileResponse(UserDto user,
@@ -22,9 +22,4 @@ public interface UserMapper {
                                                       List<Long> storiesIds,
                                                       int followersCount,
                                                       int followingCount);
-
-    @Named("getProfilePicture")
-    default String getProfilePicture(Media profilePictureUrl) {
-        return profilePictureUrl == null ? null : profilePictureUrl.getUrl();
-    }
 }

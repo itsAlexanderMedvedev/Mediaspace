@@ -132,6 +132,10 @@ public class User implements UserDetails {
         following.remove(user);
         user.followers.remove(this);
     }
+    
+    public String getProfilePictureUrl() {
+        return profilePicture == null ? null : profilePicture.getUrl();
+    }
 }
 
 

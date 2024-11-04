@@ -54,8 +54,6 @@ public class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         deletePath = RestAssured.baseURI + ":" + port + USERS_ENDPOINT;
 
         clearDbAndRedis();
-
-        System.out.println(redisTemplate.keys("*"));
     }
 
     private void registerUser(String username, String password) {

@@ -34,7 +34,7 @@ public abstract class AbstractIntegrationTest {
     protected PlatformTransactionManager transactionManager;
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    protected RedisTemplate<String, Object> redisTemplate;
 
 
     protected static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"))

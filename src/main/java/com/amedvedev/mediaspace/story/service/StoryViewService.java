@@ -1,19 +1,19 @@
 package com.amedvedev.mediaspace.story.service;
 
 import com.amedvedev.mediaspace.story.*;
+import com.amedvedev.mediaspace.story.dto.StoriesFeedEntry;
 import com.amedvedev.mediaspace.story.dto.StoryDto;
 import com.amedvedev.mediaspace.story.dto.StoryPreviewResponse;
 import com.amedvedev.mediaspace.story.dto.ViewStoryResponse;
 import com.amedvedev.mediaspace.story.exception.StoryNotFoundException;
-import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,49 +27,28 @@ public class StoryViewService {
     private final UserService userService;
 
     @Transactional(readOnly = true)
-    public List<StoryPreviewResponse> getStoriesFeed() {
+    public Set<StoriesFeedEntry> getStoriesFeed() {
         var user = userService.getCurrentUser();
         log.info("Retrieving stories feed for user: {}", user.getUsername());
-        var storiesIds = storyRedisService.getFeedStoriesIdForUser(user.getId());
-
-        if (storiesIds.isEmpty()) {
-            return getStoriesFromDbAndCache(user);
+        
+//        var storiesFeedResponses = storyRedisService.getStoriesFeedByUserId(user.getId());
+//        if (!storiesFeedResponses.isEmpty()) {
+//            log.debug("Stories feed found in cache for user with id: {}", user.getId());
+//            return storiesFeedResponses;
+//        }
+        
+        log.debug("Stories feed not found in cache for user with id: {}", user.getId());
+        var storyFeedProjections = storyRepository.findStoryFeedByUserId(user.getId());
+        if (storyFeedProjections.isEmpty()) {
+            log.warn("Feed of user with id {} is empty", user.getId());
+            return Collections.emptySet();
         }
 
-        log.debug("Constructing stories feed for user with id: {}", user.getId());
-        return mapStoriesIdsToStoryPreviewResponses(storiesIds);
-    }
-
-    private List<StoryPreviewResponse> getStoriesFromDbAndCache(User user) {
-        log.debug("No stories ids found in cache for constructing stories feed for user with id: {}", user.getId());
-        var stories = getStoriesFeed(user);
-        if (!stories.isEmpty()) {
-            storyRedisService.cacheFeedStoriesIdsForUser(user.getId(), stories);
-        }
-        return mapStoriesToStoryPreviewResponseList(stories);
-    }
-
-    private List<Story> getStoriesFeed(User user) {
-        log.debug("Retrieving stories feed from database for user with id: {}", user.getId());
-        return storyRepository.findStoriesFeed(user.getId());
-    }
-
-    @Transactional(readOnly = true)
-    public List<StoryPreviewResponse> getStoryPreviewsOfUser(String username) {
-        var user = userService.getUserDtoByUsername(username);
-        log.info("Retrieving stories of user: {}", username);
-
-        var stories = getStoryPreviewResponseList(user.getId());
-        checkIfUserHasStories(username, stories);
-
-        return stories;
-    }
-
-    private void checkIfUserHasStories(String username, List<StoryPreviewResponse> stories) {
-        if (stories.isEmpty()) {
-            log.warn("User {} has no stories", username);
-            throw new StoryNotFoundException(String.format("User %s has no stories", username));
-        }
+        var storiesFeedResponses = storyFeedProjections.stream()
+                .map(storyMapper::toStoryFeedResponse)
+                .collect(Collectors.toSet());
+        storyRedisService.cacheStoriesFeedByUserId(user.getId(), storiesFeedResponses);
+        return storiesFeedResponses;
     }
 
     @Transactional(readOnly = true)
@@ -79,18 +58,17 @@ public class StoryViewService {
     }
 
     @Transactional(readOnly = true)
-    public ViewStoryResponse getViewStoryResponseByStoryId(Long id) {
-        log.info("Getting ViewStoryResponse for story with id: {}", id);
-        var storyDtoOptional = getStoryDtoById(id);
-        return storyMapper.toViewStoryResponse(storyDtoOptional.orElseThrow(
-                () -> new StoryNotFoundException("Story not found")));
+    public List<StoryPreviewResponse> getStoryPreviewsOfUser(String username) {
+        log.info("Retrieving stories of user: {}", username);
+        var user = userService.getUserDtoByUsername(username);
+        return getStoryPreviewResponses(user.getId());
     }
 
-    private List<StoryPreviewResponse> getStoryPreviewResponseList(Long userId) {
+    private List<StoryPreviewResponse> getStoryPreviewResponses(Long userId) {
         var storiesIds = storyRedisService.getStoriesIdsForUser(userId);
 
         if (storiesIds.isEmpty()) {
-            log.debug("No stories ids found in cache for constructing stories for user with id: {}", userId);
+            log.debug("No stories ids found in cache for constructing stories previews for user with id: {}", userId);
             var stories = storyManagementService.getStoriesByUserId(userId);
 
             if (stories.isEmpty()) {
@@ -98,12 +76,19 @@ public class StoryViewService {
                 return List.of();
             }
 
-            storyRedisService.cacheStoriesIdsForUser(userId, stories);
+            cacheStoriesIdsAndStories(userId, stories);
+            
             return mapStoriesToStoryPreviewResponseList(stories);
         }
 
-        log.debug("Constructing stories for user with id: {}", userId);
+        log.debug("Stories ids found in cache, constructing stories feed for user with id: {}", userId);
         return mapStoriesIdsToStoryPreviewResponses(storiesIds);
+    }
+
+    private void cacheStoriesIdsAndStories(Long userId, List<Story> stories) {
+        var storiesIds = stories.stream().map(Story::getId).toList();
+        stories.forEach(story -> storyRedisService.cacheStoryDto(storyMapper.toStoryDto(story)));
+        storyRedisService.cacheStoriesIdsForUser(userId, storiesIds);
     }
 
     private List<StoryPreviewResponse> mapStoriesToStoryPreviewResponseList(List<Story> stories) {
@@ -117,6 +102,14 @@ public class StoryViewService {
                 .map(Optional::get)
                 .map(storyMapper::toStoryPreviewResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ViewStoryResponse getViewStoryResponseByStoryId(Long id) {
+        log.info("Getting ViewStoryResponse for story with id: {}", id);
+        var storyDtoOptional = getStoryDtoById(id);
+        return storyMapper.toViewStoryResponse(storyDtoOptional.orElseThrow(
+                () -> new StoryNotFoundException("Story not found")));
     }
 
     private Optional<StoryDto> getStoryDtoById(Long id) {

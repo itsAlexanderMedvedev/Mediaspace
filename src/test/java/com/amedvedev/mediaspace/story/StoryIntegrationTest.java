@@ -229,8 +229,8 @@ public class StoryIntegrationTest extends AbstractIntegrationTest {
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .get(USER_USERNAME_ENDPOINT, user.getUsername())
                 .then()
-                .statusCode(HttpStatus.NOT_FOUND.value())
-                .body("reason", equalTo("User user has no stories"));
+                .statusCode(HttpStatus.OK.value())
+                .body(equalTo("[]"));
     }
 
     @Test

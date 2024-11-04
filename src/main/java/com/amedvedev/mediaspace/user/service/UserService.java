@@ -30,6 +30,8 @@ public class UserService {
     private final FollowRepository followRepository;
     private final PasswordEncoder passwordEncoder;
 
+    
+    // TODO: REFACTOR ALL GET CURRENT USER INTO @AuthenticationPrincipal
     @Transactional(readOnly = true)
     public User getCurrentUser() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -130,7 +132,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<Long> getFollowersIdsByUserId(Long id) {
-        log.debug("Getting followers for user with id: {}", id);
+        log.debug("Getting followers of user with id: {}", id);
         return followRepository.findFollowersIdsByUserId(id);
     }
 
