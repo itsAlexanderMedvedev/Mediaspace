@@ -61,13 +61,13 @@ public class StoryRedisService {
         redisTemplate.opsForZSet().add(key, tuples);
     }
 
-    public List<StoriesFeedEntry> getStoriesFeedByUserId(Long id) {
+    public Set<StoriesFeedEntry> getStoriesFeedByUserId(Long id) {
         log.debug("Retrieving stories feed for user with id: {}", id);
         var key = constructStoriesFeedKey(id);
         System.out.println("LOOKING FOR KEY " + key);
         var storiesFeedProjections = redisTemplate.opsForZSet().reverseRange(key, 0, -1);
         System.out.println("STORIES FEED PROJECTIONS: " + storiesFeedProjections);
-        return storiesFeedProjections == null ? List.of() : storyMapper.mapTuplesToStoriesFeed(storiesFeedProjections);
+        return storiesFeedProjections == null ? Set.of() : storyMapper.mapTuplesToStoriesFeed(storiesFeedProjections);
     }
     
     public void cacheStoriesIdsForUser(Long userId, List<Long> storiesIds) {

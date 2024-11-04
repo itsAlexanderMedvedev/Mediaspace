@@ -57,10 +57,10 @@ public interface StoryMapper {
                 .toList();
     }
     
-    default List<StoriesFeedEntry> mapTuplesToStoriesFeed(Collection<Object> tuples) {
+    default Set<StoriesFeedEntry> mapTuplesToStoriesFeed(Collection<Object> tuples) {
         return tuples.stream()
                 .map(StoriesFeedEntry.class::cast)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 }
 

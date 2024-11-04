@@ -200,7 +200,9 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void getStoriesFeedWhenNotFoundInCache() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    void getStoriesFeedWhenNotFoundInCache() 
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        
         followUserWithRequest(token1, user2);
         followUserWithRequest(token1, user3);
         followUserWithRequest(token1, user4);

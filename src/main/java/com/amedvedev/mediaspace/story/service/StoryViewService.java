@@ -31,11 +31,11 @@ public class StoryViewService {
         var user = userService.getCurrentUser();
         log.info("Retrieving stories feed for user: {}", user.getUsername());
         
-//        var storiesFeedResponses = storyRedisService.getStoriesFeedByUserId(user.getId());
-//        if (!storiesFeedResponses.isEmpty()) {
-//            log.debug("Stories feed found in cache for user with id: {}", user.getId());
-//            return storiesFeedResponses;
-//        }
+        var storiesFeedResponses = storyRedisService.getStoriesFeedByUserId(user.getId());
+        if (!storiesFeedResponses.isEmpty()) {
+            log.debug("Stories feed found in cache for user with id: {}", user.getId());
+            return storiesFeedResponses;
+        }
         
         log.debug("Stories feed not found in cache for user with id: {}", user.getId());
         var storyFeedProjections = storyRepository.findStoryFeedByUserId(user.getId());
@@ -44,7 +44,7 @@ public class StoryViewService {
             return Collections.emptySet();
         }
 
-        var storiesFeedResponses = storyFeedProjections.stream()
+        storiesFeedResponses = storyFeedProjections.stream()
                 .map(storyMapper::toStoryFeedResponse)
                 .collect(Collectors.toSet());
         storyRedisService.cacheStoriesFeedByUserId(user.getId(), storiesFeedResponses);
