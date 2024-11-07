@@ -1,5 +1,6 @@
 package com.amedvedev.mediaspace.user.service;
 
+import com.amedvedev.mediaspace.user.User;
 import com.amedvedev.mediaspace.user.UserMapper;
 import com.amedvedev.mediaspace.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
@@ -26,62 +27,78 @@ public class UserRedisService {
     private static final int DEFAULT_USER_TTL = 1;
     private static final int DEFAULT_USERNAME_TO_ID_TTL = 24;
 
+    public void cacheUser(User user) {
+        log.debug("Caching id mapping and dto of user with id: {}", user.getId());
+        var userDto = userMapper.toUserDto(user);
+        cacheUserDto(userDto);
+        cacheUsernameToIdMapping(user.getUsername(), user.getId());
+    }
+
+    private void cacheUsernameToIdMapping(String username, Long id) {
+        log.debug("Caching username-to-id mapping for username: {}", username);
+        var key = constructUsernameToIdMappingKey(username);
+        redisTemplate.opsForValue().set(key, id, DEFAULT_USERNAME_TO_ID_TTL, TimeUnit.HOURS);
+    }
+
     public void cacheUserDto(UserDto userDto) {
-        log.debug("Caching user with id: {}", userDto.getId());
-        var key = USER_PREFIX + userDto.getId();
+        log.debug("Caching dto of user with id: {}", userDto.getId());
+        var key = constructUserKey(userDto.getId());
         redisTemplate.opsForValue().set(key, userDto, DEFAULT_USER_TTL, TimeUnit.HOURS);
     }
 
-    public Optional<UserDto> getUserDtoById(Long id) {
-        log.debug("Retrieving UserDto from cache with id: {}", id);
-        var key = USER_PREFIX + id;
-        UserDto userJson = (UserDto) redisTemplate.opsForValue().get(key);
+    public Optional<UserDto> getUserDtoByUsername(String username) {
+        log.debug("Retrieving user by username: {}", username);
+        var userId = getCachedUserIdByUsername(username);
+        return userId.flatMap(this::getUserDtoById);
+    }
 
-        if (userJson == null) {
+    private Optional<Long> getCachedUserIdByUsername(String username) {
+        var key = constructUsernameToIdMappingKey(username);
+        var userIdObj = redisTemplate.opsForValue().get(key);
+
+        if (userIdObj == null) {
+            log.debug("User ID not found in cache for username: {}", username);
+            return Optional.empty();
+        }
+
+        if (userIdObj instanceof Number) {
+            long userId = ((Number) userIdObj).longValue();
+            refreshKeyTtl(key, DEFAULT_USERNAME_TO_ID_TTL, TimeUnit.HOURS);
+            return Optional.of(userId);
+        }
+
+        log.error("Unexpected type for user ID in cache. Expected a Number, but found object of class {}", userIdObj.getClass());
+        return Optional.empty();
+    }
+
+    private Optional<UserDto> getUserDtoById(Long id) {
+        log.debug("Retrieving UserDto from cache with id: {}", id);
+        var key = constructUserKey(id);
+        var userDto = (UserDto) redisTemplate.opsForValue().get(key);
+
+        if (userDto == null) {
             log.debug("User not found in cache with key: {}", key);
             return Optional.empty();
         }
 
         refreshKeyTtl(key, DEFAULT_USER_TTL, TimeUnit.HOURS);
-        return Optional.of(userJson);
+        return Optional.of(userDto);
     }
 
-    public void clearCachedUserById(Long id) {
+    public void deleteUser(User user) {
+        log.debug("Deleting id mapping and dto of user id: {}", user.getId());
+        deleteUserDtoById(user.getId());
+        clearCachedUserIdByUsername(user.getUsername());
+    }
+
+    private void deleteUserDtoById(Long id) {
         log.debug("Clearing cached user data for user with id: {}", id);
-        var key = USER_PREFIX + id;
+        var key = constructUserKey(id);
         redisTemplate.delete(key);
     }
-
-    public void cacheUsernameToId(String username, Long id) {
-        log.debug("Caching username-to-id mapping for username: {}", username);
-        var key = USERNAME_TO_ID_PREFIX + username;
-        redisTemplate.opsForValue().set(key, id, DEFAULT_USERNAME_TO_ID_TTL, TimeUnit.HOURS);
-    }
-
-    public Optional<Long> getCachedUserIdByUsername(String username) {
-    log.debug("Retrieving user ID from cache for username: {}", username);
-    var key = USERNAME_TO_ID_PREFIX + username;
-    Object userIdObj = redisTemplate.opsForValue().get(key);
-
-    if (userIdObj == null) {
-        log.debug("User ID not found in cache for username: {}", username);
-        return Optional.empty();
-    }
-
-    long userId;
-    if (userIdObj instanceof Number) {
-        userId = ((Number) userIdObj).longValue();
-    } else {
-        log.error("Unexpected type for user ID in cache: {}. Expected a Number.", userIdObj.getClass());
-        return Optional.empty();
-    }
-
-    refreshKeyTtl(key, DEFAULT_USERNAME_TO_ID_TTL, TimeUnit.HOURS);
-    return Optional.of(userId);
-}
-
-    public void clearCachedUserIdByUsername(String username) {
-        String key = USERNAME_TO_ID_PREFIX + username;
+    
+    private void clearCachedUserIdByUsername(String username) {
+        var key = constructUsernameToIdMappingKey(username);
         redisTemplate.delete(key);
         log.debug("Cleared cached user ID for username: {}", username);
     }
@@ -110,9 +127,16 @@ public class UserRedisService {
         return Optional.of(count);
     }
 
-
     private void refreshKeyTtl(String key, int ttl, TimeUnit timeUnit) {
         log.debug("Updating TTL for key: {}", key);
         redisTemplate.expire(key, ttl, timeUnit);
+    }
+
+    private String constructUserKey(Long id) {
+        return USER_PREFIX + id;
+    }
+
+    private String constructUsernameToIdMappingKey(String username) {
+        return USERNAME_TO_ID_PREFIX + username;
     }
 }

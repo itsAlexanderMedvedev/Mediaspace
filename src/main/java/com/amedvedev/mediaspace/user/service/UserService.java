@@ -145,7 +145,7 @@ public class UserService {
 
         user.setUsername(newUsername);
         userRepository.save(user);
-        cacheUserAndIdMapping(user);
+        userRedisService.cacheUser(user);
 
         log.info("User {} successfully changed username to {}", user.getUsername(), newUsername);
 
@@ -190,8 +190,7 @@ public class UserService {
         log.debug("Saving user with username: {}", user.getUsername());
         var savedUser = userRepository.save(user);
         log.debug("Caching user with username: {}", user.getUsername());
-        userRedisService.cacheUserDto(userMapper.toUserDto(savedUser));
-        userRedisService.cacheUsernameToId(savedUser.getUsername(), savedUser.getId());
+        userRedisService.cacheUser(savedUser);
     }
 
     @Transactional
@@ -202,12 +201,7 @@ public class UserService {
 
         user.setDeleted(true);
         userRepository.save(user);
-        clearCachedUserInfo(user);
-    }
-
-    private void clearCachedUserInfo(User user) {
-        userRedisService.clearCachedUserById(user.getId());
-        userRedisService.clearCachedUserIdByUsername(user.getUsername());
+        userRedisService.deleteUser(user);
     }
 
     @Transactional
@@ -222,16 +216,11 @@ public class UserService {
 
         user.setDeleted(false);
         userRepository.save(user);
-        cacheUserAndIdMapping(user);
+        userRedisService.cacheUser(user);
 
         return RestoreUserResponse.builder()
                 .message("User restored successfully. Please login to continue.")
                 .build();
-    }
-
-    private void cacheUserAndIdMapping(User user) {
-        userRedisService.cacheUserDto(userMapper.toUserDto(user));
-        userRedisService.cacheUsernameToId(user.getUsername(), user.getId());
     }
 
     private void verifyPasswordIsCorrect(String password, User user) {
@@ -262,9 +251,7 @@ public class UserService {
     }
 
     private UserDto getUserDto(String username) {
-        return userRedisService.getCachedUserIdByUsername(username)
-            .flatMap(userRedisService::getUserDtoById)
-            .orElseGet(() -> {
+        return userRedisService.getUserDtoByUsername(username).orElseGet(() -> {
                 log.debug("User with username: {} not found in cache", username);
                 return getAndCacheUserDtoByUsername(username);
             });

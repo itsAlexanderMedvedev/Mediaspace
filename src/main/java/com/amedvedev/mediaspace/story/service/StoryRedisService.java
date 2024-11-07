@@ -30,6 +30,7 @@ public class StoryRedisService {
     private final StoryMapper storyMapper;
 
     public void cacheStories(List<Story> stories) {
+        log.debug("Caching stories: {}", stories);
         redisTemplate.executePipelined((RedisCallback<?>) connection -> {
             stories.forEach(story -> {
                 serializeAndCache(connection, story);
@@ -50,17 +51,10 @@ public class StoryRedisService {
     }
 
     public void cacheStory(Story story) {
+        log.debug("Caching story dto with and its id: {} to publisher's stories", story.getId());
         var storyDto = storyMapper.toStoryDto(story);
         cacheStoryDto(storyDto);
         cacheStoryIdToUserStories(story.getUser().getId(), story);
-    }
-
-    public void cacheStoryDto(StoryDto storyDto) {
-        var id = storyDto.getId();
-        log.debug("Caching story dto with id: {}", id);
-
-        var key = STORY_PREFIX + id;
-        redisTemplate.opsForValue().set(key, storyDto);
     }
 
     public void deleteStory(Story story) {
@@ -71,16 +65,24 @@ public class StoryRedisService {
         removeStoryIdFromUserStories(userId, storyId);
     }
 
-    private void deleteStoryDtoById(Long id) {
-        log.debug("Removing story dto with id: {}", id);
+    public void cacheStoryDto(StoryDto storyDto) {
+        var id = storyDto.getId();
+        log.debug("Caching story dto with id: {}", id);
+
         var key = STORY_PREFIX + id;
-        redisTemplate.delete(key);
+        redisTemplate.opsForValue().set(key, storyDto);
     }
 
     public Optional<StoryDto> getStoryDtoById(Long id) {
         log.debug("Retrieving story with id: {}", id);
         var key = STORY_PREFIX + id;
         return Optional.ofNullable((StoryDto) redisTemplate.opsForValue().get(key));
+    }
+
+    private void deleteStoryDtoById(Long id) {
+        log.debug("Removing story dto with id: {}", id);
+        var key = STORY_PREFIX + id;
+        redisTemplate.delete(key);
     }
 
     public void cacheStoryIdToUserStories(Long userId, Story story) {
