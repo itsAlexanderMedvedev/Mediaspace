@@ -370,11 +370,6 @@ public class PostIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
-
-        // TODO: look into that
-        entityManager.flush();
-        entityManager.clear();
-
         assertThat(postRepository.findById(post.getId())).isEmpty();
         assertThat(postMediaRepository.findAll()).isEmpty();
         assertThat(mediaRepository.findAll()).isEmpty();

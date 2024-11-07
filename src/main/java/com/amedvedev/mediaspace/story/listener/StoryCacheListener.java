@@ -22,8 +22,6 @@ public class StoryCacheListener {
     public void onStoryCreated(StoryCreatedEvent event) {
         var story = event.getStory();
         log.debug("Received story created event for story with id: {}", story.getId());
-        var storyDto = storyMapper.toStoryDto(story);
-        storyRedisService.cacheStoryDto(storyDto);
-        storyRedisService.cacheStoryIdToUserStories(story.getUser().getId(), story);
+        storyRedisService.cacheStory(story);
     }
 }

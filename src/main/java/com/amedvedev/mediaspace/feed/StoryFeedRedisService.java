@@ -76,8 +76,8 @@ public class StoryFeedRedisService {
         if (followersIds.isEmpty()) {
             log.debug("No followers to add entry to of user with id {} found", publisherId);
             return;
-
         }
+        
         redisTemplate.executePipelined((RedisCallback<?>) connection -> {
             followersIds.forEach(id -> {
                 var key = constructStoriesFeedKey(id);
@@ -85,6 +85,20 @@ public class StoryFeedRedisService {
             });
             return null;
         });
+    }
+
+    private void addToRedisSortedSet(String key, Object value, RedisConnection connection) {
+        var keyBytes = redisTemplate.getStringSerializer().serialize(key);
+
+        // For some reason redisTemplate.getValueSerializer().serialize() doesnt work, although set in RedisConfig
+        var valueSerializer = new GenericJackson2JsonRedisSerializer();
+        var valueBytes = valueSerializer.serialize(value);
+
+        if (keyBytes != null && valueBytes != null) {
+            connection.zAdd(keyBytes, Instant.now().toEpochMilli(), valueBytes);
+        } else {
+            log.error("Serialization resulted in null value for key {} or value {}", key, value);
+        }
     }
 
     public void deleteFeedEntryFromFollowersFeeds(Long publisherId,
@@ -108,20 +122,6 @@ public class StoryFeedRedisService {
         });
     }
 
-
-    private void addToRedisSortedSet(String key, Object value, RedisConnection connection) {
-        var keyBytes = redisTemplate.getStringSerializer().serialize(key);
-
-        // For some reason redisTemplate.getValueSerializer().serialize() doesnt work, although set in RedisConfig
-        var valueSerializer = new GenericJackson2JsonRedisSerializer();
-        var valueBytes = valueSerializer.serialize(value);
-
-        if (keyBytes != null && valueBytes != null) {
-            connection.zAdd(keyBytes, Instant.now().toEpochMilli(), valueBytes);
-        } else {
-            log.error("Serialization resulted in null value for key {} or value {}", key, value);
-        }
-    }
     
     private String constructStoriesFeedKey(Long userId) {
         return USER_PREFIX + userId + STORIES_FEED_SUFFIX;

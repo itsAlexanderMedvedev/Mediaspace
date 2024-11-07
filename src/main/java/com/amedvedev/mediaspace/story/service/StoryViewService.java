@@ -78,7 +78,7 @@ public class StoryViewService {
                 return List.of();
             }
 
-            cacheStoriesIdsAndStories(userId, stories);
+            storyRedisService.cacheStories(stories);
             
             return mapStoriesToStoryPreviewResponseList(stories);
         }
@@ -87,11 +87,12 @@ public class StoryViewService {
         return mapStoriesIdsToStoryPreviewResponses(storiesIds);
     }
 
-    private void cacheStoriesIdsAndStories(Long userId, List<Story> stories) {
-        var storiesIds = stories.stream().map(Story::getId).toList();
-        stories.forEach(story -> storyRedisService.cacheStoryDto(storyMapper.toStoryDto(story)));
-        storyRedisService.cacheStoriesIdsForUser(userId, storiesIds);
-    }
+//    private void cacheStories(Long userId, List<Story> stories) {
+//        var storiesIds = stories.stream().map(Story::getId).toList();
+//        stories.forEach(story -> storyRedisService.cacheStoryDto(storyMapper.toStoryDto(story)));
+//        storyRedisService.cacheStoriesIdsForUser(userId, storiesIds);
+//        
+//    }
 
     private List<StoryPreviewResponse> mapStoriesToStoryPreviewResponseList(List<Story> stories) {
         return stories.stream().map(storyMapper::toStoryPreviewResponse).toList();

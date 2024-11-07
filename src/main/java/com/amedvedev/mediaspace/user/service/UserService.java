@@ -29,9 +29,7 @@ public class UserService {
     private final UserRedisService userRedisService;
     private final FollowRepository followRepository;
     private final PasswordEncoder passwordEncoder;
-
     
-    // TODO: REFACTOR ALL GET CURRENT USER INTO @AuthenticationPrincipal
     @Transactional(readOnly = true)
     public User getCurrentUser() {
         var username = SecurityContextHolder.getContext().getAuthentication().getName();

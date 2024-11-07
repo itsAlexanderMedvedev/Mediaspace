@@ -85,7 +85,7 @@ public class StoryManagementService {
         }
         
         storyRepository.delete(story);
-        storyRedisService.deleteStoryFromCache(story);
+        storyRedisService.deleteStory(story);
         removeStoriesFeedEntryFromFollowersFeedsIfNoStoriesLeft(currentUser);
     }
 
@@ -105,7 +105,7 @@ public class StoryManagementService {
     }
 
     public Story findStoryById(Long id) {
-        log.debug("Retrieving story with id: {}", id);
+        log.debug("Retrieving story with id from database: {}", id);
         return storyRepository.findById(id).orElseThrow(() -> {
             log.warn("Story with id {} not found", id);
             return new StoryNotFoundException("Story not found");
