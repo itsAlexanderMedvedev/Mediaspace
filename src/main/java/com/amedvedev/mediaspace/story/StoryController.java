@@ -90,7 +90,7 @@ public class StoryController {
     @GetMapping("/user/{username}")
     @ResponseStatus(HttpStatus.OK)
     public List<StoryPreviewResponse> getStoriesOfUser(@PathVariable String username) {
-        return storyViewService.getStoryPreviewsOfUser(username);
+        return storyViewService.getStoriesPreviewsOfUser(username);
     }
 
     @Operation(summary = "Get all stories of the current user")
@@ -111,7 +111,7 @@ public class StoryController {
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
     public List<StoryPreviewResponse> getStoriesOfCurrentUser() {
-        return storyViewService.getCurrentUserStories();
+        return storyViewService.getCurrentUserStoriesPreviews();
     }
 
     @Operation(summary = "Delete a story")

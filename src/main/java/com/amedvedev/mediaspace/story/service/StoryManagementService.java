@@ -1,11 +1,13 @@
 package com.amedvedev.mediaspace.story.service;
 
 import com.amedvedev.mediaspace.exception.ForbiddenActionException;
+import com.amedvedev.mediaspace.feed.StoryFeedRedisService;
 import com.amedvedev.mediaspace.media.Media;
 import com.amedvedev.mediaspace.story.Story;
 import com.amedvedev.mediaspace.story.StoryMapper;
 import com.amedvedev.mediaspace.story.StoryRepository;
 import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
+import com.amedvedev.mediaspace.story.dto.StoriesFeedEntry;
 import com.amedvedev.mediaspace.story.dto.StoryDto;
 import com.amedvedev.mediaspace.story.event.StoryCreatedEvent;
 import com.amedvedev.mediaspace.story.exception.StoriesLimitReachedException;
@@ -15,7 +17,6 @@ import com.amedvedev.mediaspace.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ public class StoryManagementService {
     private final StoryRepository storyRepository;
     private final StoryMapper storyMapper;
     private final StoryRedisService storyRedisService;
+    private final StoryFeedRedisService storyFeedRedisService;
     private final ApplicationEventPublisher eventPublisher;
 
     private static final int MAXIMUM_STORIES_COUNT = 30;
@@ -75,18 +77,31 @@ public class StoryManagementService {
     public void deleteStory(Long id) {
         log.info("Deleting story with id: {}", id);
         var story = findStoryById(id);
+        var currentUser = userService.getCurrentUser();
 
-        if (belongsToAnotherUser(story)) {
+        if (belongsToAnotherUser(currentUser, story)) {
             log.warn("Cannot delete story of another user");
             throw new ForbiddenActionException("Cannot delete story of another user");
         }
-
+        
         storyRepository.delete(story);
-        storyRedisService.removeStoryDtoById(id);
+        storyRedisService.deleteStoryFromCache(story);
+        removeStoriesFeedEntryFromFollowersFeedsIfNoStoriesLeft(currentUser);
     }
 
-    private static boolean belongsToAnotherUser(Story story) {
-        return !story.getUser().getUsername().equals(SecurityContextHolder.getContext().getAuthentication().getName());
+    private void removeStoriesFeedEntryFromFollowersFeedsIfNoStoriesLeft(User currentUser) {
+        // 1 because during the transaction the story is still in the user's stories list
+        if (currentUser.getStories().size() == 1) {
+            log.debug("No stories left for user: {}", currentUser.getUsername());
+            var userId = currentUser.getId();
+            var followersIds = userService.getFollowersIdsByUserId(userId);
+            var storiesFeedEntry = StoriesFeedEntry.builder().username(currentUser.getUsername()).build();
+            storyFeedRedisService.deleteFeedEntryFromFollowersFeeds(userId, storiesFeedEntry, followersIds);
+        }
+    }
+
+    private static boolean belongsToAnotherUser(User currentUser, Story story) {
+        return !story.getUser().getUsername().equals(currentUser.getUsername());
     }
 
     public Story findStoryById(Long id) {

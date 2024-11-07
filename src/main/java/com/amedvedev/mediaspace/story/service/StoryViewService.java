@@ -1,5 +1,6 @@
 package com.amedvedev.mediaspace.story.service;
 
+import com.amedvedev.mediaspace.feed.StoryFeedRedisService;
 import com.amedvedev.mediaspace.story.*;
 import com.amedvedev.mediaspace.story.dto.StoriesFeedEntry;
 import com.amedvedev.mediaspace.story.dto.StoryDto;
@@ -25,6 +26,7 @@ public class StoryViewService {
     private final StoryManagementService storyManagementService;
     private final StoryRepository storyRepository;
     private final StoryRedisService storyRedisService;
+    private final StoryFeedRedisService storyFeedRedisService;
     private final UserService userService;
 
     @Transactional(readOnly = true)
@@ -32,7 +34,7 @@ public class StoryViewService {
         var user = userService.getCurrentUser();
         log.info("Retrieving stories feed for user: {}", user.getUsername());
         
-        var storiesFeedResponsesOptional = storyRedisService.getStoriesFeedByUserId(user.getId());
+        var storiesFeedResponsesOptional = storyFeedRedisService.getStoriesFeedByUserId(user.getId());
         if (storiesFeedResponsesOptional.isPresent()) {
             log.debug("Stories feed found in cache for user with id: {}", user.getId());
             return storiesFeedResponsesOptional.get();
@@ -47,18 +49,18 @@ public class StoryViewService {
         var storiesFeedResponses = storyFeedProjections.stream()
                 .map(storyMapper::toStoryFeedResponse)
                 .collect(Collectors.toSet());
-        storyRedisService.cacheStoriesFeedByUserId(user.getId(), storiesFeedResponses);
+        storyFeedRedisService.cacheStoriesFeedByUserId(user.getId(), storiesFeedResponses);
         return storiesFeedResponses;
     }
 
     @Transactional(readOnly = true)
-    public List<StoryPreviewResponse> getCurrentUserStories() {
+    public List<StoryPreviewResponse> getCurrentUserStoriesPreviews() {
         var user = userService.getCurrentUserDto();
-        return getStoryPreviewsOfUser(user.getUsername());
+        return getStoriesPreviewsOfUser(user.getUsername());
     }
 
     @Transactional(readOnly = true)
-    public List<StoryPreviewResponse> getStoryPreviewsOfUser(String username) {
+    public List<StoryPreviewResponse> getStoriesPreviewsOfUser(String username) {
         log.info("Retrieving stories of user: {}", username);
         var user = userService.getUserDtoByUsername(username);
         return getStoryPreviewResponses(user.getId());

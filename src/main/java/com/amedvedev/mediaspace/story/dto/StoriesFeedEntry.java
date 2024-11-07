@@ -10,6 +10,7 @@ import lombok.*;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class StoriesFeedEntry {
 
+    // TODO: handle how changing username affects feed
     @EqualsAndHashCode.Include
     @Schema(description = "Username of the story publisher", example = "username")
     private String username;

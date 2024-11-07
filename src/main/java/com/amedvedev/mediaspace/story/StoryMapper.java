@@ -59,6 +59,7 @@ public interface StoryMapper {
     
     default Set<StoriesFeedEntry> mapTuplesToStoriesFeed(Collection<Object> tuples) {
         return tuples.stream()
+                .filter(StoriesFeedEntry.class::isInstance)
                 .map(StoriesFeedEntry.class::cast)
                 .collect(Collectors.toSet());
     }

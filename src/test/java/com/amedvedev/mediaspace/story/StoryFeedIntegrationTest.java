@@ -1,6 +1,7 @@
 package com.amedvedev.mediaspace.story;
 
 import com.amedvedev.mediaspace.auth.JwtService;
+import com.amedvedev.mediaspace.feed.StoryFeedRedisService;
 import com.amedvedev.mediaspace.media.dto.CreateMediaRequest;
 import com.amedvedev.mediaspace.story.dto.CreateStoryRequest;
 import com.amedvedev.mediaspace.story.dto.StoriesFeedEntry;
@@ -37,6 +38,7 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
     private static final String STORIES_FEED_ENDPOINT = "/feed/stories";
     private static final String FOLLOW_ENDPOINT = "/users/{username}/follow";
     public static final String STORIES_ENDPOINT = "/stories";
+    public static final String STORIES_ID_ENDPOINT = "/stories/{id}";
 
     @LocalServerPort
     private Integer port;
@@ -49,6 +51,9 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private StoryRedisService storyRedisService;
+    
+    @Autowired
+    private StoryFeedRedisService storyFeedRedisService;
 
     @Autowired
     private StoryMapper storyMapper;
@@ -110,6 +115,15 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .as(StoryDto.class);
     }
 
+    private void deleteStoryForUser(String token, Long storyId) {
+        given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
+                .when()
+                .delete(STORIES_ID_ENDPOINT, storyId)
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+    }
+
     private void followUserWithRequest(String token, User followee) {
         given()
                 .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
@@ -118,11 +132,11 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
     }
-
+    
     private void waitForAsyncStoryCache() {
         await()
                 .atMost(5, TimeUnit.SECONDS)
-                .until(() -> storyRedisService.getStoriesFeedByUserId(user1.getId())
+                .until(() -> storyFeedRedisService.getStoriesFeedByUserId(user1.getId())
                         .map(feed -> feed.size() == 2)
                         .orElse(false));
     }
@@ -272,11 +286,133 @@ public class StoryFeedIntegrationTest extends AbstractIntegrationTest {
     private void deleteStoriesFeedFromCacheForUser(User user)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
-        var constructKeyMethod = StoryRedisService.class.getDeclaredMethod("constructStoriesFeedKey", Long.class);
+        var constructKeyMethod = StoryFeedRedisService.class.getDeclaredMethod("constructStoriesFeedKey", Long.class);
         constructKeyMethod.setAccessible(true);
-        var key = (String) constructKeyMethod.invoke(storyRedisService, user.getId());
+        var key = (String) constructKeyMethod.invoke(storyFeedRedisService, user.getId());
         redisTemplate.delete(key);
     }
 
-    // TODO: TEST FOR MODIFYING ALREADY CREATED STORIES
+    @Test
+    void getStoriesFeedAfterEmptyFeedWithEmptyFeedMarkerGotPopulated() {
+        followUserWithRequest(token1, user2);
+        followUserWithRequest(token1, user3);
+        followUserWithRequest(token1, user4);
+
+        var feed1 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+        
+        assertThat(feed1).isEmpty();
+        
+        createStoryForUser(token2);
+        createStoryForUser(token3);
+
+        var storiesFeedEntryUser2 = StoriesFeedEntry.builder()
+                .username(user2.getUsername())
+                .profilePictureUrl(user2.getProfilePictureUrl())
+                .build();
+        var storiesFeedEntryUser3 = StoriesFeedEntry.builder()
+                .username(user3.getUsername())
+                .profilePictureUrl(user3.getProfilePictureUrl())
+                .build();
+
+        waitForAsyncStoryCache();
+        
+        var feed2 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+
+        assertThat(feed2).hasSize(2);
+        assertThat(feed2.get(0)).isEqualTo(storiesFeedEntryUser2);
+        assertThat(feed2.get(1)).isEqualTo(storiesFeedEntryUser3);
+    }
+
+    @Test
+    void getStoriesFeedAfterSomeStoriesGotDeleted() {
+        followUserWithRequest(token1, user2);
+        followUserWithRequest(token1, user3);
+        followUserWithRequest(token1, user4);
+
+        createStoryForUser(token2);
+        createStoryForUser(token3);
+
+        waitForAsyncStoryCache();
+        
+        var feed1 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+
+        assertThat(feed1).hasSize(2);
+        
+        deleteStoryForUser(token2, 1L);
+        
+        var feed2 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+
+        assertThat(feed2).hasSize(1);
+    }
+    
+    @Test
+    void getStoriesFeedAfterAllStoriesGotDeleted() {
+        followUserWithRequest(token1, user2);
+        followUserWithRequest(token1, user3);
+        followUserWithRequest(token1, user4);
+
+        createStoryForUser(token2);
+        createStoryForUser(token3);
+
+        waitForAsyncStoryCache();
+        
+        var feed1 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+
+        assertThat(feed1).hasSize(2); 
+        
+        deleteStoryForUser(token2, 1L);
+        deleteStoryForUser(token3, 2L);
+        
+        var feed2 = given()
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token1)
+                .when()
+                .get(STORIES_FEED_ENDPOINT)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath()
+                .getList(".", StoriesFeedEntry.class);
+
+        assertThat(feed2).isEmpty();
+    }
 }
